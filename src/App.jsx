@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppShell from './components/AppShell.jsx';
+import FeedbackAlert from './components/FeedbackAlert.jsx';
+import HintPanel from './components/HintPanel.jsx';
 import LessonPanel from './components/LessonPanel.jsx';
+import ResultsPanel from './components/ResultsPanel.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SqlEditor from './components/SqlEditor.jsx';
 import { DATASETS, getDataset } from './data/datasets.js';
 import { LESSONS, getLesson } from './data/lessons.js';
+import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
+import { useLocalStorage } from './hooks/useLocalStorage.js';
 
 function SchemaPreview({ schema, dataset }) {
   return (
@@ -61,13 +66,20 @@ function App() {
   const [lessonId, setLessonId] = useState('select-limit');
   const [sqlText, setSqlText] = useState(() => getLesson('select-limit').solution);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [progress] = useState({});
+  const [progress, setProgress] = useLocalStorage('sql-lab.progress', {});
+  const [history, setHistory] = useLocalStorage('sql-lab.history', []);
+  const [result, setResult] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
   const sqlite = useSqliteDatabase(datasetId);
 
   useEffect(() => {
     setSqlText(lesson.solution);
+    setResult(null);
+    setFeedback(null);
+    setIsHintOpen(false);
   }, [lessonId, lesson.solution]);
 
   const handleDatasetChange = (nextDatasetId) => {
@@ -90,8 +102,52 @@ function App() {
     setSidebarOpen(false);
   };
 
+  const saveHistory = (queryResult) => {
+    setHistory((current) => [
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        sql: sqlText,
+        timestamp: new Date().toISOString(),
+        datasetId,
+        mode,
+        ok: Boolean(queryResult?.ok),
+        rowCount: queryResult?.rowCount ?? queryResult?.changedRows ?? 0,
+      },
+      ...current,
+    ].slice(0, 30));
+  };
+
+  const executeCurrentQuery = () => {
+    if (mode !== 'sqlite') {
+      const connectorResult = { ok: false, errorType: 'connection', message: 'Tryb MySQL zostanie aktywowany po skonfigurowaniu connectora.', hint: 'Wprowadź dane połączenia w panelu connectora.' };
+      setResult(connectorResult);
+      saveHistory(connectorResult);
+      return connectorResult;
+    }
+    const queryResult = sqlite.execute(sqlText);
+    setResult(queryResult);
+    setFeedback(null);
+    saveHistory(queryResult);
+    return queryResult;
+  };
+
   const handleRun = () => {
-    if (mode === 'sqlite') sqlite.execute(sqlText);
+    executeCurrentQuery();
+  };
+
+  const handleCheck = () => {
+    const queryResult = executeCurrentQuery();
+    if (mode !== 'sqlite') {
+      setFeedback({ type: 'warning', title: 'Ocena jest dostępna w trybie SQLite', message: 'Tryb MySQL służy do wykonywania zapytań na Twojej bazie.' });
+      return;
+    }
+    const validation = validateQueryResult(queryResult, lesson.expected);
+    if (validation.passed) {
+      setProgress((current) => ({ ...current, [lesson.id]: true }));
+      setFeedback({ type: 'success', title: 'Zadanie zaliczone', message: lesson.successMessage, details: validation.details });
+    } else {
+      setFeedback({ type: 'warning', title: 'Jeszcze nie tym razem', message: validation.message, details: validation.details });
+    }
   };
 
   const sidebar = (
@@ -128,15 +184,14 @@ function App() {
         value={sqlText}
         onChange={setSqlText}
         onRun={handleRun}
-        onCheck={handleRun}
-        onReset={() => setSqlText('')}
+        onCheck={handleCheck}
+        onReset={() => { setSqlText(''); setResult(null); setFeedback(null); }}
         onShowSolution={() => setSqlText(lesson.solution)}
         disabled={mode === 'sqlite' && sqlite.status !== 'ready'}
       />
-      <section className="result-placeholder" aria-live="polite">
-        <div className="placeholder-result-icon"><i className="bi bi-table" aria-hidden="true" /></div>
-        <div><strong>Wynik zapytania</strong><p>Uruchom zapytanie, aby zobaczyć rekordy w tabeli wyników.</p></div>
-      </section>
+      <HintPanel hint={lesson.hint} open={isHintOpen} onToggle={() => setIsHintOpen((open) => !open)} />
+      <FeedbackAlert feedback={feedback} />
+      <ResultsPanel result={result} history={history} onHistorySelect={(entry) => { setSqlText(entry.sql); setResult(null); setFeedback(null); }} />
     </AppShell>
   );
 }
