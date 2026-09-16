@@ -2,11 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDataset } from '../data/datasets.js';
 import { createSqliteDatabase, executeSqliteQuery, getSqliteSchema } from '../services/sqliteEngine.js';
 import { buildCreateTableSql } from '../services/schemaBuilder.js';
+import { applySqliteRelationships } from '../services/sqliteRelations.js';
 
-export function useSqliteDatabase(datasetId, customTables = []) {
+export function useSqliteDatabase(datasetId, customTables = [], relationships = []) {
   const databaseRef = useRef(null);
+  const relationshipsRef = useRef(relationships);
   const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState({ status: 'loading', error: null, schema: [] });
+
+  useEffect(() => {
+    relationshipsRef.current = relationships;
+  }, [relationships]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -27,6 +33,8 @@ export function useSqliteDatabase(datasetId, customTables = []) {
         customTables.forEach((customTable) => {
           database.db.run(customTable.sql ?? buildCreateTableSql(customTable));
         });
+        const relationshipResult = applySqliteRelationships(database.db, relationshipsRef.current);
+        if (!relationshipResult.ok) throw new Error(relationshipResult.message);
         databaseRef.current = database;
         setState({ status: 'ready', error: null, schema: getSqliteSchema(database.db) });
       })
@@ -64,11 +72,29 @@ export function useSqliteDatabase(datasetId, customTables = []) {
 
   const reset = useCallback(() => setReloadToken((token) => token + 1), []);
 
+  const applyRelationships = useCallback((nextRelationships) => {
+    if (!databaseRef.current) {
+      return {
+        ok: false,
+        errorType: 'loading',
+        message: 'Baza danych jest jeszcze przygotowywana.',
+        hint: 'Spróbuj ponownie za chwilę.',
+      };
+    }
+    const result = applySqliteRelationships(databaseRef.current.db, nextRelationships);
+    if (result.ok) {
+      relationshipsRef.current = nextRelationships;
+      setState((current) => ({ ...current, status: 'ready', error: null, schema: getSqliteSchema(databaseRef.current.db) }));
+    }
+    return result;
+  }, []);
+
   return {
     status: state.status,
     error: state.error,
     schema: state.schema,
     execute,
     reset,
+    applyRelationships,
   };
 }
