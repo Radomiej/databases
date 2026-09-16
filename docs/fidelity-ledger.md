@@ -10,7 +10,8 @@ Punkt odniesienia: zaakceptowany koncept [sql-learning-lab-concept.png](C:/Nauka
 | Priorytet akcji | `Uruchom` jest najbardziej kontrastową akcją, `Sprawdź` i pozostałe są drugorzędne | Identyczna hierarchia przycisków oraz osobne akcje `Wyczyść` i `Rozwiązanie` | Zgodne |
 | Schemat | Karty tabel z liczbą kolumn, ikonami kluczy i zakładkami `Tabele`/`Relacje` | Karty są generowane z SQLite lub rzeczywistego schematu MySQL, z wyszukiwaniem i relacjami | Zgodne + rozszerzone |
 | Edytor i wynik | Duży obszar SQL, wynik w tabeli z liczbą rekordów | Edytor ma numerowanie, skrót `Ctrl+Enter`, podpowiedź, wynik/historię i walidację lekcji | Zgodne + rozszerzone |
-| Podgląd tabeli | Koncept pokazuje wynik zapytania jako tabelę | Ikona oka przy tabeli otwiera modal z rekordami aktualnej bazy, limit 50, `NULL` i odświeżaniem | Celowe rozszerzenie |
+| Podgląd tabeli | Koncept pokazuje wynik zapytania jako tabelę | Menu `⋮` przy tabeli otwiera modal z rekordami aktualnej bazy, limit 50, `NULL` i odświeżaniem | Celowe rozszerzenie |
+| Edycja relacji | Zakładka `Relacje` pokazuje połączenia tabel | SQLite ma modal edycji FK z zapisem i resetem; MySQL pokazuje relacje rzeczywiste tylko do odczytu | Celowe rozszerzenie |
 | Gęstość widoku | Koncept pokazuje lekcję i początek wyniku w jednym ekranie | Widok developerski zachowuje tę gęstość; dłuższe listy przewijają się niezależnie w sidebarze i inspectorze | Zgodne |
 
 Najważniejsza różnica jest celowa: wersja działająca ma pełne 12 lekcji, cztery datasety, kreator własnych tabel i panel konektora MySQL, więc zawiera więcej elementów niż statyczny koncept.
