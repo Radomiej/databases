@@ -53,4 +53,13 @@ describe('RelationEditorModal', () => {
 
     await waitFor(() => expect(onReset).toHaveBeenCalledTimes(1));
   });
+
+  it('locks page scrolling while open', () => {
+    document.body.style.overflow = 'auto';
+    const { unmount } = render(<RelationEditorModal open schema={schema} relationships={[]} onClose={vi.fn()} onSave={vi.fn()} onReset={vi.fn()} />);
+
+    expect(document.body.style.overflow).toBe('hidden');
+
+    unmount();
+  });
 });

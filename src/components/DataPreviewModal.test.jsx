@@ -52,4 +52,48 @@ describe('DataPreviewModal', () => {
     expect(screen.getByText('Brak połączenia')).toBeInTheDocument();
     expect(screen.getByText('Uruchom MySQL.')).toBeInTheDocument();
   });
+
+  it('paginates preview rows and changes the visible page', () => {
+    const rows = Array.from({ length: 23 }, (_, index) => [index + 1]);
+    render(
+      <DataPreviewModal
+        open
+        table={{ name: 'autorzy', columns: [{ name: 'id', type: 'INTEGER' }] }}
+        databaseLabel="Biblioteka"
+        result={{ ok: true, columns: ['id'], rows, rowCount: rows.length, durationMs: 2 }}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Strona 1 z 3')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: '11' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Następna strona' }));
+
+    expect(screen.getByText('Strona 2 z 3')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '11' })).toBeInTheDocument();
+    expect(screen.queryByRole('cell', { name: '1' })).not.toBeInTheDocument();
+  });
+
+  it('locks page scrolling while open and restores it after closing', () => {
+    document.body.style.overflow = 'auto';
+    const { unmount } = render(
+      <DataPreviewModal
+        open
+        table={table}
+        databaseLabel="Biblioteka"
+        result={{ ok: true, columns: ['id'], rows: [[1]], rowCount: 1, durationMs: 1 }}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(document.body.style.overflow).toBe('hidden');
+
+    unmount();
+
+    expect(document.body.style.overflow).toBe('auto');
+  });
 });

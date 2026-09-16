@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock.js';
 
 function splitEndpoint(endpoint) {
   const [table = '', column = ''] = String(endpoint ?? '').split('.');
@@ -63,6 +64,8 @@ function RelationEditorModal({ open, schema = [], relationships = [], onClose, o
   }, [open, relationships, schema]);
 
   const tableNames = useMemo(() => schema.map((table) => table.name), [schema]);
+
+  useBodyScrollLock(open);
 
   if (!open) return null;
 

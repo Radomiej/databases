@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { normalizeTableDefinition, SUPPORTED_COLUMN_TYPES } from '../services/schemaBuilder.js';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock.js';
 
 const blankColumn = (index) => ({ name: `kolumna_${index}`, type: 'TEXT', primaryKey: false, notNull: false });
 
@@ -18,6 +19,8 @@ function TableBuilderModal({ open, onClose, onCreate, existingNames = [] }) {
       setPreviewSql('');
     }
   }, [open]);
+
+  useBodyScrollLock(open);
 
   if (!open) return null;
 
