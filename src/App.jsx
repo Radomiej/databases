@@ -4,61 +4,15 @@ import FeedbackAlert from './components/FeedbackAlert.jsx';
 import HintPanel from './components/HintPanel.jsx';
 import LessonPanel from './components/LessonPanel.jsx';
 import ResultsPanel from './components/ResultsPanel.jsx';
+import SchemaPanel from './components/SchemaPanel.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SqlEditor from './components/SqlEditor.jsx';
+import TableBuilderModal from './components/TableBuilderModal.jsx';
 import { DATASETS, getDataset } from './data/datasets.js';
 import { LESSONS, getLesson } from './data/lessons.js';
 import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
-
-function SchemaPreview({ schema, dataset }) {
-  return (
-    <div className="inspector-content">
-      <div className="inspector-heading">
-        <div className="inspector-heading-icon"><i className="bi bi-database-fill" aria-hidden="true" /></div>
-        <div>
-          <h2>Schemat bazy</h2>
-          <p>{dataset.name} · {dataset.tables.length} tabel</p>
-        </div>
-      </div>
-      <div className="inspector-tabs" role="tablist" aria-label="Widoki schematu">
-        <button type="button" className="inspector-tab is-active" role="tab" aria-selected="true">Tabele</button>
-        <button type="button" className="inspector-tab" role="tab" aria-selected="false">Relacje</button>
-      </div>
-      <div className="schema-search-wrap">
-        <i className="bi bi-search" aria-hidden="true" />
-        <input className="schema-search" aria-label="Szukaj tabeli" placeholder="Szukaj tabeli..." />
-      </div>
-      <div className="schema-table-list">
-        {(schema.length ? schema : dataset.tables).map((tableItem) => (
-          <div className="schema-table-card" key={tableItem.name}>
-            <div className="schema-table-heading">
-              <span className="schema-table-icon"><i className="bi bi-table" aria-hidden="true" /></span>
-              <strong>{tableItem.name}</strong>
-              <button type="button" className="schema-more" aria-label={`Opcje tabeli ${tableItem.name}`}><i className="bi bi-three-dots-vertical" /></button>
-            </div>
-            <div className="schema-column-count">{tableItem.columns.length} kolumn</div>
-            <div className="schema-columns">
-              {tableItem.columns.slice(0, 5).map((column) => (
-                <div className="schema-column" key={column.name}>
-                  <i className={`bi ${column.primaryKey || column.pk ? 'bi-key-fill schema-key' : 'bi-grip-vertical schema-column-mark'}`} aria-hidden="true" />
-                  <span>{column.name}</span>
-                  {(column.foreignKey || column.foreignKeys?.length) && <small>FK</small>}
-                </div>
-              ))}
-              {tableItem.columns.length > 5 && <div className="schema-more-columns">+ {tableItem.columns.length - 5} więcej</div>}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="inspector-hint">
-        <div className="hint-icon"><i className="bi bi-info-circle-fill" aria-hidden="true" /></div>
-        <div><strong>Wskazówka</strong><p>Kliknij tabelę, aby podejrzeć jej dane lub podpowiedź zapytania.</p></div>
-      </div>
-    </div>
-  );
-}
 
 function App() {
   const [mode, setMode] = useState('sqlite');
@@ -68,12 +22,15 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [progress, setProgress] = useLocalStorage('sql-lab.progress', {});
   const [history, setHistory] = useLocalStorage('sql-lab.history', []);
+  const [customTables, setCustomTables] = useLocalStorage('sql-lab.custom-tables', {});
   const [result, setResult] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [isHintOpen, setIsHintOpen] = useState(false);
+  const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
-  const sqlite = useSqliteDatabase(datasetId);
+  const customTablesForDataset = customTables?.[datasetId] ?? [];
+  const sqlite = useSqliteDatabase(datasetId, customTablesForDataset);
 
   useEffect(() => {
     setSqlText(lesson.solution);
@@ -100,6 +57,19 @@ function App() {
   const handleModeChange = (nextMode) => {
     setMode(nextMode);
     setSidebarOpen(false);
+  };
+
+  const handleCreateTable = (definition) => {
+    const queryResult = sqlite.execute(definition.sql);
+    if (!queryResult.ok) {
+      setResult(queryResult);
+      setFeedback({ type: 'warning', title: 'Nie udało się utworzyć tabeli', message: queryResult.message, details: queryResult.hint });
+      return;
+    }
+    setCustomTables((current) => ({ ...current, [datasetId]: [...(current[datasetId] ?? []), definition] }));
+    setResult(queryResult);
+    setFeedback({ type: 'success', title: 'Tabela utworzona', message: `Tabela ${definition.tableName} jest gotowa do użycia w zapytaniach.` });
+    setIsTableBuilderOpen(false);
   };
 
   const saveHistory = (queryResult) => {
@@ -169,7 +139,7 @@ function App() {
       sidebar={sidebar}
       sidebarOpen={sidebarOpen}
       onSidebarClose={(nextValue) => setSidebarOpen(typeof nextValue === 'boolean' ? nextValue : false)}
-      inspector={<SchemaPreview schema={sqlite.schema} dataset={dataset} />}
+      inspector={<SchemaPanel schema={sqlite.schema} dataset={dataset} relationships={dataset.relationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} />}
     >
       <div className="main-toolbar">
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
@@ -192,6 +162,7 @@ function App() {
       <HintPanel hint={lesson.hint} open={isHintOpen} onToggle={() => setIsHintOpen((open) => !open)} />
       <FeedbackAlert feedback={feedback} />
       <ResultsPanel result={result} history={history} onHistorySelect={(entry) => { setSqlText(entry.sql); setResult(null); setFeedback(null); }} />
+      <TableBuilderModal open={isTableBuilderOpen} onClose={() => setIsTableBuilderOpen(false)} onCreate={handleCreateTable} existingNames={sqlite.schema.map((tableItem) => tableItem.name)} />
     </AppShell>
   );
 }

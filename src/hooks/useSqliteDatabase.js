@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDataset } from '../data/datasets.js';
 import { createSqliteDatabase, executeSqliteQuery, getSqliteSchema } from '../services/sqliteEngine.js';
+import { buildCreateTableSql } from '../services/schemaBuilder.js';
 
-export function useSqliteDatabase(datasetId) {
+export function useSqliteDatabase(datasetId, customTables = []) {
   const databaseRef = useRef(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [state, setState] = useState({ status: 'loading', error: null, schema: [] });
@@ -23,6 +24,9 @@ export function useSqliteDatabase(datasetId) {
           database.destroy();
           return;
         }
+        customTables.forEach((customTable) => {
+          database.db.run(customTable.sql ?? buildCreateTableSql(customTable));
+        });
         databaseRef.current = database;
         setState({ status: 'ready', error: null, schema: getSqliteSchema(database.db) });
       })
@@ -39,7 +43,7 @@ export function useSqliteDatabase(datasetId) {
         databaseRef.current = null;
       }
     };
-  }, [datasetId, reloadToken]);
+  }, [datasetId, reloadToken, customTables]);
 
   const execute = useCallback((sql) => {
     if (!databaseRef.current) {
