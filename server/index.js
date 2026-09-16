@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createMysqlConfig } from './queryPolicy.js';
-import { describeMysqlTable, executeMysqlQuery, listMysqlTables, testMysqlConnection } from './mysqlClient.js';
+import { describeMysqlTable, executeMysqlQuery, listMysqlRelations, listMysqlTables, testMysqlConnection } from './mysqlClient.js';
 
 function loadLocalEnv(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -79,6 +79,15 @@ app.post('/api/mysql/describe', async (request, response) => {
   try {
     const result = await describeMysqlTable(getConfig(request), String(request.body?.tableName ?? ''));
     return response.status(result.ok ? 200 : 400).json(result);
+  } catch (error) {
+    return sendError(response, error);
+  }
+});
+
+app.post('/api/mysql/relations', async (request, response) => {
+  try {
+    const result = await listMysqlRelations(getConfig(request));
+    return response.status(result.ok ? 200 : 502).json(result);
   } catch (error) {
     return sendError(response, error);
   }

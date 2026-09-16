@@ -5,6 +5,7 @@ import DataPreviewModal from './components/DataPreviewModal.jsx';
 import FeedbackAlert from './components/FeedbackAlert.jsx';
 import HintPanel from './components/HintPanel.jsx';
 import LessonPanel from './components/LessonPanel.jsx';
+import RelationEditorModal from './components/RelationEditorModal.jsx';
 import ResultsPanel from './components/ResultsPanel.jsx';
 import SchemaPanel from './components/SchemaPanel.jsx';
 import Sidebar from './components/Sidebar.jsx';
@@ -15,7 +16,7 @@ import { LESSONS, getLesson } from './data/lessons.js';
 import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
-import { describeTable as describeMysqlTable, getConnectorHealth, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
+import { describeTable as describeMysqlTable, getConnectorHealth, listRelations, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
 import { buildTablePreviewSql } from './services/tablePreview.js';
 
 const DEFAULT_CONNECTION = { host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' };
@@ -29,6 +30,7 @@ function App() {
   const [progress, setProgress] = useLocalStorage('sql-lab.progress', {});
   const [history, setHistory] = useLocalStorage('sql-lab.history', []);
   const [customTables, setCustomTables] = useLocalStorage('sql-lab.custom-tables', {});
+  const [relationshipOverrides, setRelationshipOverrides] = useLocalStorage('sql-lab.relationships', {});
   const [rememberConnection, setRememberConnection] = useLocalStorage('sql-lab.remember-connection', false);
   const [savedConnection, setSavedConnection] = useLocalStorage('sql-lab.mysql-connection', DEFAULT_CONNECTION);
   const [connection, setConnection] = useState(() => ({ ...DEFAULT_CONNECTION, ...(rememberConnection ? savedConnection : {}), password: '' }));
@@ -38,14 +40,18 @@ function App() {
   const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
   const [mysqlStatus, setMysqlStatus] = useState({ state: 'idle', message: '', serverVersion: '' });
   const [mysqlSchema, setMysqlSchema] = useState([]);
+  const [mysqlRelationships, setMysqlRelationships] = useState([]);
   const [mysqlCapabilities, setMysqlCapabilities] = useState({ mutationsAvailable: false });
   const [allowMutations, setAllowMutations] = useState(false);
+  const [isRelationEditorOpen, setIsRelationEditorOpen] = useState(false);
   const [tablePreview, setTablePreview] = useState({ table: null, result: null, loading: false });
   const previewRequestRef = useRef(0);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
   const customTablesForDataset = useMemo(() => customTables?.[datasetId] ?? [], [customTables, datasetId]);
-  const sqlite = useSqliteDatabase(datasetId, customTablesForDataset);
+  const savedRelationships = relationshipOverrides?.[datasetId];
+  const sqliteRelationships = useMemo(() => (Array.isArray(savedRelationships) ? savedRelationships : dataset.relationships), [dataset.relationships, savedRelationships]);
+  const sqlite = useSqliteDatabase(datasetId, customTablesForDataset, sqliteRelationships);
 
   useEffect(() => {
     if (mode !== 'mysql') {
@@ -84,6 +90,12 @@ function App() {
   const handleModeChange = (nextMode) => {
     previewRequestRef.current += 1;
     setMode(nextMode);
+    setIsRelationEditorOpen(false);
+    if (nextMode === 'sqlite') {
+      setMysqlSchema([]);
+      setMysqlRelationships([]);
+      setMysqlStatus({ state: 'idle', message: '', serverVersion: '' });
+    }
     setTablePreview({ table: null, result: null, loading: false });
     if (nextMode === 'sqlite') setConnection((current) => ({ ...current, password: '' }));
     setSidebarOpen(false);
@@ -104,18 +116,26 @@ function App() {
     const response = await testConnection(connection);
     if (!response.ok) {
       setMysqlSchema([]);
+      setMysqlRelationships([]);
       setMysqlStatus({ state: 'error', message: response.message, serverVersion: '' });
       setResult(response);
       return;
     }
-    const tablesResponse = await listTables(connection);
+    const [tablesResponse, relationsResponse] = await Promise.all([listTables(connection), listRelations(connection)]);
+    const actualRelationships = relationsResponse.ok && Array.isArray(relationsResponse.relationships) ? relationsResponse.relationships : [];
+    setMysqlRelationships(actualRelationships);
     if (tablesResponse.ok) {
       const tableDetails = await Promise.all(tablesResponse.tableNames.map(async (tableName) => {
         const detail = await describeMysqlTable(connection, tableName);
+        const foreignKeys = actualRelationships.flatMap((relationship) => {
+          const [fromTable, fromColumn] = relationship.from.split('.');
+          const [toTable, toColumn] = relationship.to.split('.');
+          return fromTable === tableName ? [{ table: toTable, from: fromColumn, to: toColumn }] : [];
+        });
         return {
           name: tableName,
           columns: detail.ok ? detail.rows.map(([field, type, nullable, key]) => ({ name: field, type, notNull: nullable === 'NO', primaryKey: key === 'PRI' })) : [],
-          foreignKeys: [],
+          foreignKeys,
         };
       }));
       setMysqlSchema(tableDetails);
@@ -124,6 +144,7 @@ function App() {
     }
     setMysqlStatus({ state: 'connected', message: 'Połączenie działa poprawnie.', serverVersion: response.serverVersion });
     if (!tablesResponse.ok) setFeedback({ type: 'warning', title: 'Połączono, ale nie pobrano schematu', message: tablesResponse.message, details: tablesResponse.hint });
+    else if (!relationsResponse.ok) setFeedback({ type: 'warning', title: 'Pobrano tabele bez relacji', message: relationsResponse.message, details: relationsResponse.hint });
   };
 
   const handleCreateTable = (definition) => {
@@ -166,6 +187,34 @@ function App() {
   const handleCloseTablePreview = () => {
     previewRequestRef.current += 1;
     setTablePreview({ table: null, result: null, loading: false });
+  };
+
+  const handleSaveRelationships = (nextRelationships) => {
+    const response = sqlite.applyRelationships(nextRelationships);
+    if (!response.ok) {
+      setFeedback({ type: 'warning', title: 'Nie udało się zapisać relacji', message: response.message, details: response.hint });
+      return response;
+    }
+    setRelationshipOverrides((current) => ({ ...current, [datasetId]: nextRelationships }));
+    setFeedback({ type: 'success', title: 'Relacje zapisane', message: 'Zmiany relacji SQLite są aktywne w bieżącej bazie i zapisane w projekcie.' });
+    setIsRelationEditorOpen(false);
+    return response;
+  };
+
+  const handleResetRelationships = () => {
+    const response = sqlite.applyRelationships(dataset.relationships);
+    if (!response.ok) {
+      setFeedback({ type: 'warning', title: 'Nie udało się zresetować relacji', message: response.message, details: response.hint });
+      return response;
+    }
+    setRelationshipOverrides((current) => {
+      const next = { ...current };
+      delete next[datasetId];
+      return next;
+    });
+    setFeedback({ type: 'success', title: 'Relacje przywrócone', message: 'Przywrócono relacje startowe bieżącej bazy. Własne tabele pozostały bez zmian.' });
+    setIsRelationEditorOpen(false);
+    return response;
   };
 
   const saveHistory = (queryResult) => {
@@ -236,7 +285,7 @@ function App() {
       sidebar={sidebar}
       sidebarOpen={sidebarOpen}
       onSidebarClose={(nextValue) => setSidebarOpen(typeof nextValue === 'boolean' ? nextValue : false)}
-      inspector={<SchemaPanel schema={mode === 'sqlite' ? sqlite.schema : mysqlSchema} dataset={dataset} relationships={dataset.relationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} onPreviewTable={handlePreviewTable} previewDisabled={mode === 'sqlite' && sqlite.status !== 'ready'} />}
+      inspector={<SchemaPanel schema={mode === 'sqlite' ? sqlite.schema : mysqlSchema} dataset={dataset} databaseLabel={mode === 'sqlite' ? dataset.name : connection.database || 'MySQL'} relationships={mode === 'sqlite' ? sqliteRelationships : mysqlRelationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} onPreviewTable={handlePreviewTable} previewDisabled={(mode === 'sqlite' && sqlite.status !== 'ready') || (mode === 'mysql' && mysqlStatus.state !== 'connected')} onEditRelationships={mode === 'sqlite' && sqlite.status === 'ready' ? () => setIsRelationEditorOpen(true) : undefined} relationshipsReadOnly={mode === 'mysql'} />}
     >
       <div className="main-toolbar">
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
@@ -261,6 +310,7 @@ function App() {
       <FeedbackAlert feedback={feedback} />
       <ResultsPanel result={result} history={history} onHistorySelect={(entry) => { setSqlText(entry.sql); setResult(null); setFeedback(null); }} />
       <TableBuilderModal open={isTableBuilderOpen} onClose={() => setIsTableBuilderOpen(false)} onCreate={handleCreateTable} existingNames={sqlite.schema.map((tableItem) => tableItem.name)} />
+      <RelationEditorModal open={isRelationEditorOpen} schema={sqlite.schema.length ? sqlite.schema : dataset.tables} relationships={sqliteRelationships} onClose={() => setIsRelationEditorOpen(false)} onSave={handleSaveRelationships} onReset={handleResetRelationships} />
       <DataPreviewModal open={Boolean(tablePreview.table)} table={tablePreview.table} databaseLabel={mode === 'sqlite' ? dataset.name : connection.database || 'MySQL'} mode={mode} result={tablePreview.result} loading={tablePreview.loading} onClose={handleCloseTablePreview} onRefresh={() => tablePreview.table && handlePreviewTable(tablePreview.table.name)} />
     </AppShell>
   );

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getConnectorHealth, testConnection } from './mysqlApi.js';
+import { getConnectorHealth, listRelations, testConnection } from './mysqlApi.js';
 
 describe('mysql api client', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
@@ -16,5 +16,16 @@ describe('mysql api client', () => {
     fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, allowMutationsAvailable: false }) });
     await expect(getConnectorHealth()).resolves.toMatchObject({ ok: true, allowMutationsAvailable: false });
     expect(fetch).toHaveBeenCalledWith('/api/health');
+  });
+
+  it('loads read-only relationship metadata from the connector', async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, relationships: [{ from: 'zamowienia.klient_id', to: 'klienci.id' }] }),
+    });
+
+    await expect(listRelations({ host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' }))
+      .resolves.toMatchObject({ relationships: [{ from: 'zamowienia.klient_id', to: 'klienci.id' }] });
+    expect(fetch).toHaveBeenCalledWith('/api/mysql/relations', expect.objectContaining({ method: 'POST' }));
   });
 });

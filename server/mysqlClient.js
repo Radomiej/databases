@@ -111,3 +111,31 @@ export async function describeMysqlTable(config, tableName) {
   }
   return executeMysqlQuery(config, `DESCRIBE \`${tableName}\`;`);
 }
+
+export async function listMysqlRelations(config) {
+  const startedAt = performance.now();
+  let connection;
+  try {
+    connection = await connect(config);
+    const [rows] = await connection.execute(`
+      SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND REFERENCED_TABLE_NAME IS NOT NULL
+      ORDER BY TABLE_NAME, COLUMN_NAME;
+    `);
+    return {
+      ok: true,
+      relationships: rows.map((row) => ({
+        from: `${row.TABLE_NAME}.${row.COLUMN_NAME}`,
+        to: `${row.REFERENCED_TABLE_NAME}.${row.REFERENCED_COLUMN_NAME}`,
+      })),
+      durationMs: resultDuration(startedAt),
+      statementType: 'SELECT',
+    };
+  } catch (error) {
+    return errorPayload(error, resultDuration(startedAt), 'SELECT');
+  } finally {
+    if (connection) await connection.end().catch(() => {});
+  }
+}

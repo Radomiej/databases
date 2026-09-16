@@ -52,3 +52,7 @@ export function listTables(connection) {
 export function describeTable(connection, tableName) {
   return postJson('/api/mysql/describe', { connection, tableName });
 }
+
+export function listRelations(connection) {
+  return postJson('/api/mysql/relations', { connection });
+}

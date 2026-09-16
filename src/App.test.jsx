@@ -9,6 +9,7 @@ vi.mock('./hooks/useSqliteDatabase.js', () => ({
     schema: [],
     execute: vi.fn(),
     reset: vi.fn(),
+    applyRelationships: vi.fn(() => ({ ok: true })),
   }),
 }));
 
