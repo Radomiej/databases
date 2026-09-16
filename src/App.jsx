@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppShell from './components/AppShell.jsx';
 import ConnectionPanel from './components/ConnectionPanel.jsx';
+import DataPreviewModal from './components/DataPreviewModal.jsx';
 import FeedbackAlert from './components/FeedbackAlert.jsx';
 import HintPanel from './components/HintPanel.jsx';
 import LessonPanel from './components/LessonPanel.jsx';
@@ -15,6 +16,7 @@ import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { describeTable as describeMysqlTable, getConnectorHealth, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
+import { buildTablePreviewSql } from './services/tablePreview.js';
 
 const DEFAULT_CONNECTION = { host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' };
 
@@ -38,6 +40,8 @@ function App() {
   const [mysqlSchema, setMysqlSchema] = useState([]);
   const [mysqlCapabilities, setMysqlCapabilities] = useState({ mutationsAvailable: false });
   const [allowMutations, setAllowMutations] = useState(false);
+  const [tablePreview, setTablePreview] = useState({ table: null, result: null, loading: false });
+  const previewRequestRef = useRef(0);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
   const customTablesForDataset = useMemo(() => customTables?.[datasetId] ?? [], [customTables, datasetId]);
@@ -78,7 +82,9 @@ function App() {
   };
 
   const handleModeChange = (nextMode) => {
+    previewRequestRef.current += 1;
     setMode(nextMode);
+    setTablePreview({ table: null, result: null, loading: false });
     if (nextMode === 'sqlite') setConnection((current) => ({ ...current, password: '' }));
     setSidebarOpen(false);
   };
@@ -131,6 +137,35 @@ function App() {
     setResult(queryResult);
     setFeedback({ type: 'success', title: 'Tabela utworzona', message: `Tabela ${definition.tableName} jest gotowa do użycia w zapytaniach.` });
     setIsTableBuilderOpen(false);
+  };
+
+  const handlePreviewTable = async (tableName) => {
+    const requestId = previewRequestRef.current + 1;
+    previewRequestRef.current = requestId;
+    const sourceSchema = mode === 'sqlite' ? sqlite.schema : mysqlSchema;
+    const table = sourceSchema.find((tableItem) => tableItem.name === tableName)
+      ?? dataset.tables.find((tableItem) => tableItem.name === tableName)
+      ?? { name: tableName, columns: [] };
+    setTablePreview({ table, result: null, loading: true });
+
+    try {
+      const sql = buildTablePreviewSql(tableName, mode);
+      const previewResult = mode === 'sqlite' ? sqlite.execute(sql) : await runMysqlQuery(connection, sql, false);
+      if (previewRequestRef.current === requestId) setTablePreview({ table, result: previewResult, loading: false });
+    } catch (error) {
+      if (previewRequestRef.current === requestId) {
+        setTablePreview({
+          table,
+          loading: false,
+          result: { ok: false, errorType: 'preview', message: error instanceof Error ? error.message : String(error), hint: 'Wybierz tabelę z panelu schematu i spróbuj ponownie.' },
+        });
+      }
+    }
+  };
+
+  const handleCloseTablePreview = () => {
+    previewRequestRef.current += 1;
+    setTablePreview({ table: null, result: null, loading: false });
   };
 
   const saveHistory = (queryResult) => {
@@ -201,7 +236,7 @@ function App() {
       sidebar={sidebar}
       sidebarOpen={sidebarOpen}
       onSidebarClose={(nextValue) => setSidebarOpen(typeof nextValue === 'boolean' ? nextValue : false)}
-      inspector={<SchemaPanel schema={mode === 'sqlite' ? sqlite.schema : mysqlSchema} dataset={dataset} relationships={dataset.relationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} />}
+      inspector={<SchemaPanel schema={mode === 'sqlite' ? sqlite.schema : mysqlSchema} dataset={dataset} relationships={dataset.relationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} onPreviewTable={handlePreviewTable} previewDisabled={mode === 'sqlite' && sqlite.status !== 'ready'} />}
     >
       <div className="main-toolbar">
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
@@ -226,6 +261,7 @@ function App() {
       <FeedbackAlert feedback={feedback} />
       <ResultsPanel result={result} history={history} onHistorySelect={(entry) => { setSqlText(entry.sql); setResult(null); setFeedback(null); }} />
       <TableBuilderModal open={isTableBuilderOpen} onClose={() => setIsTableBuilderOpen(false)} onCreate={handleCreateTable} existingNames={sqlite.schema.map((tableItem) => tableItem.name)} />
+      <DataPreviewModal open={Boolean(tablePreview.table)} table={tablePreview.table} databaseLabel={mode === 'sqlite' ? dataset.name : connection.database || 'MySQL'} mode={mode} result={tablePreview.result} loading={tablePreview.loading} onClose={handleCloseTablePreview} onRefresh={() => tablePreview.table && handlePreviewTable(tablePreview.table.name)} />
     </AppShell>
   );
 }

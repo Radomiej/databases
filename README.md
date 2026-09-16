@@ -5,6 +5,8 @@ Lokalne laboratorium SQL dla przygotowania do INF.03. Aplikacja ma dwa tryby:
 - **SQLite — nauka** — działa bez MySQL, tworzy bazę w przeglądarce i pozwala wykonywać oceniane lekcje.
 - **MySQL — connector** — React wysyła zapytania do lokalnego API Node/Express, które łączy się z serwerem MySQL przez `mysql2`.
 
+W panelu **Schemat bazy** kliknij ikonę oka przy tabeli, aby otworzyć podgląd pierwszych 50 rekordów z aktualnej bazy. Podgląd działa w obu trybach i jest niezależny od historii ocenianych zapytań.
+
 phpMyAdmin nie jest endpointem aplikacji. Możesz używać go do importu skryptu i sprawdzania danych, ale connector łączy się bezpośrednio z serwerem MySQL.
 
 ## Wymagania

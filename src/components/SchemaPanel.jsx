@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite', onAddTable }) {
+function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite', onAddTable, onPreviewTable, previewDisabled = false }) {
   const [activeTab, setActiveTab] = useState('tables');
   const [search, setSearch] = useState('');
   const availableTables = schema.length ? schema : dataset.tables;
@@ -36,7 +36,7 @@ function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite'
                 <div className="schema-table-heading">
                   <span className="schema-table-icon"><i className="bi bi-table" aria-hidden="true" /></span>
                   <strong>{tableItem.name}</strong>
-                  <button type="button" className="schema-more" aria-label={`Opcje tabeli ${tableItem.name}`}><i className="bi bi-three-dots-vertical" aria-hidden="true" /></button>
+                  <button type="button" className="schema-more" aria-label={`Podgląd danych ${tableItem.name}`} title="Podgląd danych" onClick={() => onPreviewTable?.(tableItem.name)} disabled={previewDisabled}><i className="bi bi-eye" aria-hidden="true" /></button>
                 </div>
                 <div className="schema-column-count">{tableItem.columns.length} kolumn</div>
                 <div className="schema-columns">
