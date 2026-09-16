@@ -35,10 +35,16 @@ function sendError(response, error) {
 }
 
 function getConfig(request) {
-  return createMysqlConfig(request.body?.connection ?? request.body ?? {});
+  const body = request.body ?? {};
+  const connection = body.connection ?? body;
+  return createMysqlConfig({ ...connection, allowMutations: body.allowMutations === true });
 }
 
-app.get('/api/health', (_request, response) => response.json({ ok: true, service: 'sql-learning-lab-mysql-connector' }));
+app.get('/api/health', (_request, response) => response.json({
+  ok: true,
+  service: 'sql-learning-lab-mysql-connector',
+  allowMutationsAvailable: String(process.env.MYSQL_ALLOW_MUTATIONS).toLowerCase() === 'true',
+}));
 
 app.post('/api/mysql/test-connection', async (request, response) => {
   try {

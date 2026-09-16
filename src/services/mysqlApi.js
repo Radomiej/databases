@@ -18,6 +18,25 @@ async function postJson(url, payload) {
   }
 }
 
+async function getJson(url) {
+  try {
+    const response = await fetch(url);
+    return await response.json();
+  } catch (error) {
+    return {
+      ok: false,
+      errorType: 'connection',
+      message: 'Nie można połączyć się z backendem connectora.',
+      hint: 'Uruchom npm run server i spróbuj ponownie.',
+      details: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export function getConnectorHealth() {
+  return getJson('/api/health');
+}
+
 export function testConnection(connection) {
   return postJson('/api/mysql/test-connection', { connection });
 }

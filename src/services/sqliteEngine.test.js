@@ -40,4 +40,11 @@ describe('sqlite engine helpers', () => {
     expect(schema.map((item) => item.name)).toEqual(['klienci', 'pozycje_zamowien', 'produkty', 'zamowienia']);
     destroy();
   });
+
+  it('reports zero changed rows for DDL statements', async () => {
+    const { db, destroy } = await createSqliteDatabase(DATASETS[0], initSqlJsForTest, () => wasmPath);
+    const result = executeSqliteQuery(db, 'CREATE TABLE notatki (id INTEGER PRIMARY KEY, tresc TEXT)');
+    expect(result).toMatchObject({ ok: true, statementType: 'CREATE', changedRows: 0 });
+    destroy();
+  });
 });

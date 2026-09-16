@@ -14,7 +14,7 @@ import { LESSONS, getLesson } from './data/lessons.js';
 import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
-import { describeTable as describeMysqlTable, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
+import { describeTable as describeMysqlTable, getConnectorHealth, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
 
 const DEFAULT_CONNECTION = { host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' };
 
@@ -36,11 +36,24 @@ function App() {
   const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
   const [mysqlStatus, setMysqlStatus] = useState({ state: 'idle', message: '', serverVersion: '' });
   const [mysqlSchema, setMysqlSchema] = useState([]);
+  const [mysqlCapabilities, setMysqlCapabilities] = useState({ mutationsAvailable: false });
   const [allowMutations, setAllowMutations] = useState(false);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
-  const customTablesForDataset = customTables?.[datasetId] ?? [];
+  const customTablesForDataset = useMemo(() => customTables?.[datasetId] ?? [], [customTables, datasetId]);
   const sqlite = useSqliteDatabase(datasetId, customTablesForDataset);
+
+  useEffect(() => {
+    if (mode !== 'mysql') {
+      setMysqlCapabilities({ mutationsAvailable: false });
+      return undefined;
+    }
+    let isCurrent = true;
+    getConnectorHealth().then((response) => {
+      if (isCurrent) setMysqlCapabilities({ mutationsAvailable: response.ok === true && response.allowMutationsAvailable === true });
+    });
+    return () => { isCurrent = false; };
+  }, [mode]);
 
   useEffect(() => {
     setSqlText(lesson.solution);
@@ -188,13 +201,13 @@ function App() {
       sidebar={sidebar}
       sidebarOpen={sidebarOpen}
       onSidebarClose={(nextValue) => setSidebarOpen(typeof nextValue === 'boolean' ? nextValue : false)}
-      inspector={<SchemaPanel schema={sqlite.schema} dataset={dataset} relationships={dataset.relationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} />}
+      inspector={<SchemaPanel schema={mode === 'sqlite' ? sqlite.schema : mysqlSchema} dataset={dataset} relationships={dataset.relationships} mode={mode} onAddTable={() => setIsTableBuilderOpen(true)} />}
     >
       <div className="main-toolbar">
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
         <div className="toolbar-engine"><span className="toolbar-engine-dot" />{mode === 'sqlite' ? 'SQLite lokalnie' : 'MySQL connector'}</div>
       </div>
-      {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={false} onAllowMutationsChange={setAllowMutations} />}
+      {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={mysqlCapabilities.mutationsAvailable} onAllowMutationsChange={setAllowMutations} />}
       <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={mode === 'sqlite' ? sqlite.status : mysqlStatus.state} mode={mode} />
       <div className="syntax-strip">
         <div className="syntax-strip-label"><i className="bi bi-braces" aria-hidden="true" /> Składnia</div>

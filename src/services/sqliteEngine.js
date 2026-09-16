@@ -3,6 +3,7 @@ import initSqlJs from 'sql.js';
 const DEFAULT_WASM_PATH = '/sql-wasm.wasm';
 
 const QUERY_STATEMENTS = new Set(['SELECT', 'WITH', 'PRAGMA', 'EXPLAIN', 'SHOW', 'DESCRIBE']);
+const DML_STATEMENTS = new Set(['INSERT', 'UPDATE', 'DELETE', 'REPLACE']);
 
 export function stripSqlComments(sql) {
   return sql
@@ -83,8 +84,9 @@ export function executeSqliteQuery(db, sql) {
     }
 
     db.run(cleanedSql);
-    const [changeResult] = db.exec('SELECT changes() AS changedRows;');
-    const changedRows = Number(changeResult?.values?.[0]?.[0] ?? 0);
+    const changedRows = DML_STATEMENTS.has(statementType)
+      ? Number(db.exec('SELECT changes() AS changedRows;')[0]?.values?.[0]?.[0] ?? 0)
+      : 0;
     return {
       ok: true,
       columns: [],

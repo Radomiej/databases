@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyMysqlStatement, isMysqlReadOnly } from './queryPolicy.js';
+import { classifyMysqlStatement, createMysqlConfig, isMysqlReadOnly } from './queryPolicy.js';
 
 describe('MySQL query policy', () => {
   it('allows read statements', () => {
@@ -11,5 +11,12 @@ describe('MySQL query policy', () => {
   it('blocks mutations by default', () => {
     expect(isMysqlReadOnly('DROP TABLE klienci')).toBe(false);
     expect(isMysqlReadOnly("UPDATE klienci SET miasto = 'Gdańsk'")).toBe(false);
+  });
+
+  it('enables mutations only when the environment flag and UI flag are both true', () => {
+    const enabled = createMysqlConfig({ database: 'inf03_lab', allowMutations: true }, { MYSQL_ALLOW_MUTATIONS: 'true' });
+    const disabled = createMysqlConfig({ database: 'inf03_lab', allowMutations: true }, { MYSQL_ALLOW_MUTATIONS: 'false' });
+    expect(enabled.allowMutations).toBe(true);
+    expect(disabled.allowMutations).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { testConnection } from './mysqlApi.js';
+import { getConnectorHealth, testConnection } from './mysqlApi.js';
 
 describe('mysql api client', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
@@ -10,5 +10,11 @@ describe('mysql api client', () => {
     expect(fetch).toHaveBeenCalledWith('/api/mysql/test-connection', expect.objectContaining({ method: 'POST' }));
     expect(JSON.stringify(fetch.mock.calls[0])).not.toContain('localStorage');
     expect(JSON.stringify(fetch.mock.calls[0])).toContain('secret');
+  });
+
+  it('reads connector capabilities from the health endpoint', async () => {
+    fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, allowMutationsAvailable: false }) });
+    await expect(getConnectorHealth()).resolves.toMatchObject({ ok: true, allowMutationsAvailable: false });
+    expect(fetch).toHaveBeenCalledWith('/api/health');
   });
 });
