@@ -1,4 +1,7 @@
-function LessonPanel({ lesson, dataset, databaseStatus }) {
+function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite' }) {
+  const isReady = mode === 'mysql' ? databaseStatus === 'connected' : databaseStatus === 'ready';
+  const statusLabel = mode === 'mysql' ? (isReady ? 'MySQL połączony' : 'MySQL connector') : (isReady ? 'SQLite gotowe' : 'Przygotowuję SQLite');
+
   return (
     <section className="lesson-overview">
       <div className="breadcrumb-line">
@@ -19,9 +22,9 @@ function LessonPanel({ lesson, dataset, databaseStatus }) {
           <h1>{lesson.title}</h1>
           <p className="lesson-lead">{lesson.theory}</p>
         </div>
-        <div className={`database-status ${databaseStatus === 'ready' ? 'is-ready' : ''}`}>
+        <div className={`database-status ${isReady ? 'is-ready' : ''}`}>
           <span className="status-pulse" aria-hidden="true" />
-          {databaseStatus === 'ready' ? 'SQLite gotowe' : 'Przygotowuję SQLite'}
+          {statusLabel}
         </div>
       </div>
 

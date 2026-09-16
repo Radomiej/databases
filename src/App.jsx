@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppShell from './components/AppShell.jsx';
+import ConnectionPanel from './components/ConnectionPanel.jsx';
 import FeedbackAlert from './components/FeedbackAlert.jsx';
 import HintPanel from './components/HintPanel.jsx';
 import LessonPanel from './components/LessonPanel.jsx';
@@ -13,6 +14,9 @@ import { LESSONS, getLesson } from './data/lessons.js';
 import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
+import { describeTable as describeMysqlTable, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
+
+const DEFAULT_CONNECTION = { host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' };
 
 function App() {
   const [mode, setMode] = useState('sqlite');
@@ -23,10 +27,16 @@ function App() {
   const [progress, setProgress] = useLocalStorage('sql-lab.progress', {});
   const [history, setHistory] = useLocalStorage('sql-lab.history', []);
   const [customTables, setCustomTables] = useLocalStorage('sql-lab.custom-tables', {});
+  const [rememberConnection, setRememberConnection] = useLocalStorage('sql-lab.remember-connection', false);
+  const [savedConnection, setSavedConnection] = useLocalStorage('sql-lab.mysql-connection', DEFAULT_CONNECTION);
+  const [connection, setConnection] = useState(() => ({ ...DEFAULT_CONNECTION, ...(rememberConnection ? savedConnection : {}), password: '' }));
   const [result, setResult] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
+  const [mysqlStatus, setMysqlStatus] = useState({ state: 'idle', message: '', serverVersion: '' });
+  const [mysqlSchema, setMysqlSchema] = useState([]);
+  const [allowMutations, setAllowMutations] = useState(false);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
   const customTablesForDataset = customTables?.[datasetId] ?? [];
@@ -56,7 +66,45 @@ function App() {
 
   const handleModeChange = (nextMode) => {
     setMode(nextMode);
+    if (nextMode === 'sqlite') setConnection((current) => ({ ...current, password: '' }));
     setSidebarOpen(false);
+  };
+
+  const handleConnectionChange = (nextConnection) => {
+    setConnection(nextConnection);
+    if (rememberConnection) setSavedConnection({ ...nextConnection, password: '' });
+  };
+
+  const handleRememberConnectionChange = (shouldRemember) => {
+    setRememberConnection(shouldRemember);
+    if (shouldRemember) setSavedConnection({ ...connection, password: '' });
+  };
+
+  const handleTestConnection = async () => {
+    setMysqlStatus({ state: 'loading', message: 'Łączę się z serwerem...', serverVersion: '' });
+    const response = await testConnection(connection);
+    if (!response.ok) {
+      setMysqlSchema([]);
+      setMysqlStatus({ state: 'error', message: response.message, serverVersion: '' });
+      setResult(response);
+      return;
+    }
+    const tablesResponse = await listTables(connection);
+    if (tablesResponse.ok) {
+      const tableDetails = await Promise.all(tablesResponse.tableNames.map(async (tableName) => {
+        const detail = await describeMysqlTable(connection, tableName);
+        return {
+          name: tableName,
+          columns: detail.ok ? detail.rows.map(([field, type, nullable, key]) => ({ name: field, type, notNull: nullable === 'NO', primaryKey: key === 'PRI' })) : [],
+          foreignKeys: [],
+        };
+      }));
+      setMysqlSchema(tableDetails);
+    } else {
+      setMysqlSchema([]);
+    }
+    setMysqlStatus({ state: 'connected', message: 'Połączenie działa poprawnie.', serverVersion: response.serverVersion });
+    if (!tablesResponse.ok) setFeedback({ type: 'warning', title: 'Połączono, ale nie pobrano schematu', message: tablesResponse.message, details: tablesResponse.hint });
   };
 
   const handleCreateTable = (definition) => {
@@ -87,12 +135,13 @@ function App() {
     ].slice(0, 30));
   };
 
-  const executeCurrentQuery = () => {
+  const executeCurrentQuery = async () => {
     if (mode !== 'sqlite') {
-      const connectorResult = { ok: false, errorType: 'connection', message: 'Tryb MySQL zostanie aktywowany po skonfigurowaniu connectora.', hint: 'Wprowadź dane połączenia w panelu connectora.' };
-      setResult(connectorResult);
-      saveHistory(connectorResult);
-      return connectorResult;
+      const queryResult = await runMysqlQuery(connection, sqlText, allowMutations);
+      setResult(queryResult);
+      setFeedback(null);
+      saveHistory(queryResult);
+      return queryResult;
     }
     const queryResult = sqlite.execute(sqlText);
     setResult(queryResult);
@@ -102,11 +151,11 @@ function App() {
   };
 
   const handleRun = () => {
-    executeCurrentQuery();
+    void executeCurrentQuery();
   };
 
-  const handleCheck = () => {
-    const queryResult = executeCurrentQuery();
+  const handleCheck = async () => {
+    const queryResult = await executeCurrentQuery();
     if (mode !== 'sqlite') {
       setFeedback({ type: 'warning', title: 'Ocena jest dostępna w trybie SQLite', message: 'Tryb MySQL służy do wykonywania zapytań na Twojej bazie.' });
       return;
@@ -145,7 +194,8 @@ function App() {
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
         <div className="toolbar-engine"><span className="toolbar-engine-dot" />{mode === 'sqlite' ? 'SQLite lokalnie' : 'MySQL connector'}</div>
       </div>
-      <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={sqlite.status} />
+      {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={false} onAllowMutationsChange={setAllowMutations} />}
+      <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={mode === 'sqlite' ? sqlite.status : mysqlStatus.state} mode={mode} />
       <div className="syntax-strip">
         <div className="syntax-strip-label"><i className="bi bi-braces" aria-hidden="true" /> Składnia</div>
         <div className="syntax-code-list">{lesson.syntax.map((syntax) => <code key={syntax}>{syntax}</code>)}</div>
