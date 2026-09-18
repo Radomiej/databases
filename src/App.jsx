@@ -13,6 +13,7 @@ import SqlEditor from './components/SqlEditor.jsx';
 import TableBuilderModal from './components/TableBuilderModal.jsx';
 import { DATASETS, getDataset } from './data/datasets.js';
 import { LESSONS, getLesson } from './data/lessons.js';
+import { getTaskProgressKey } from './data/lessonTasks.js';
 import { validateQueryResult } from './services/queryValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
@@ -27,7 +28,8 @@ function App() {
   const [lessonId, setLessonId] = useState('select-limit');
   const [sqlText, setSqlText] = useState(() => getLesson('select-limit').solution);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [progress, setProgress] = useLocalStorage('sql-lab.progress', {});
+  const [progress, setProgress] = useState({});
+  const [taskProgress, setTaskProgress] = useState({});
   const [history, setHistory] = useLocalStorage('sql-lab.history', []);
   const [customTables, setCustomTables] = useLocalStorage('sql-lab.custom-tables', {});
   const [relationshipOverrides, setRelationshipOverrides] = useLocalStorage('sql-lab.relationships', {});
@@ -48,6 +50,9 @@ function App() {
   const previewRequestRef = useRef(0);
   const dataset = useMemo(() => getDataset(datasetId), [datasetId]);
   const lesson = useMemo(() => getLesson(lessonId), [lessonId]);
+  const lessonTasks = useMemo(() => lesson.tasks?.length ? lesson.tasks : [{ id: `${lesson.id}-guided`, title: 'Zadanie', prompt: lesson.task, hint: lesson.hint, solution: lesson.solution, expected: lesson.expected, successMessage: lesson.successMessage }], [lesson]);
+  const [activeTaskId, setActiveTaskId] = useState('');
+  const activeTask = useMemo(() => lessonTasks.find((task) => task.id === activeTaskId) ?? lessonTasks[0], [activeTaskId, lessonTasks]);
   const customTablesForDataset = useMemo(() => customTables?.[datasetId] ?? [], [customTables, datasetId]);
   const savedRelationships = relationshipOverrides?.[datasetId];
   const sqliteRelationships = useMemo(() => (Array.isArray(savedRelationships) ? savedRelationships : dataset.relationships), [dataset.relationships, savedRelationships]);
@@ -66,11 +71,13 @@ function App() {
   }, [mode]);
 
   useEffect(() => {
-    setSqlText(lesson.solution);
+    const firstTask = lessonTasks[0];
+    setActiveTaskId(firstTask?.id ?? '');
+    setSqlText(firstTask?.solution ?? lesson.solution);
     setResult(null);
     setFeedback(null);
     setIsHintOpen(false);
-  }, [lessonId, lesson.solution]);
+  }, [lessonId, lesson.solution, lessonTasks]);
 
   const handleDatasetChange = (nextDatasetId) => {
     const nextDataset = getDataset(nextDatasetId);
@@ -85,6 +92,16 @@ function App() {
     setLessonId(nextLesson.id);
     setDatasetId(nextLesson.datasetId);
     setSidebarOpen(false);
+  };
+
+  const handleTaskChange = (nextTaskId) => {
+    const nextTask = lessonTasks.find((task) => task.id === nextTaskId);
+    if (!nextTask) return;
+    setActiveTaskId(nextTask.id);
+    setSqlText(nextTask.id === lessonTasks[0]?.id ? nextTask.solution : '');
+    setResult(null);
+    setFeedback(null);
+    setIsHintOpen(false);
   };
 
   const handleModeChange = (nextMode) => {
@@ -257,10 +274,13 @@ function App() {
       setFeedback({ type: 'warning', title: 'Ocena jest dostępna w trybie SQLite', message: 'Tryb MySQL służy do wykonywania zapytań na Twojej bazie.' });
       return;
     }
-    const validation = validateQueryResult(queryResult, lesson.expected);
+    const validation = validateQueryResult(queryResult, activeTask?.expected);
     if (validation.passed) {
-      setProgress((current) => ({ ...current, [lesson.id]: true }));
-      setFeedback({ type: 'success', title: 'Zadanie zaliczone', message: lesson.successMessage, details: validation.details });
+      const taskKey = getTaskProgressKey(lesson.id, activeTask.id);
+      const nextTaskProgress = { ...taskProgress, [taskKey]: true };
+      setTaskProgress(nextTaskProgress);
+      if (lessonTasks.every((task) => nextTaskProgress[getTaskProgressKey(lesson.id, task.id)])) setProgress((current) => ({ ...current, [lesson.id]: true }));
+      setFeedback({ type: 'success', title: 'Zadanie zaliczone', message: activeTask.successMessage ?? lesson.successMessage, details: validation.details });
     } else {
       setFeedback({ type: 'warning', title: 'Jeszcze nie tym razem', message: validation.message, details: validation.details });
     }
@@ -292,7 +312,7 @@ function App() {
         <div className="toolbar-engine"><span className="toolbar-engine-dot" />{mode === 'sqlite' ? 'SQLite lokalnie' : 'MySQL connector'}</div>
       </div>
       {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={mysqlCapabilities.mutationsAvailable} onAllowMutationsChange={setAllowMutations} />}
-      <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={mode === 'sqlite' ? sqlite.status : mysqlStatus.state} mode={mode} />
+      <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={mode === 'sqlite' ? sqlite.status : mysqlStatus.state} mode={mode} activeTaskId={activeTask?.id} taskProgress={taskProgress} onTaskChange={handleTaskChange} />
       <div className="syntax-strip">
         <div className="syntax-strip-label"><i className="bi bi-braces" aria-hidden="true" /> Składnia</div>
         <div className="syntax-code-list">{lesson.syntax.map((syntax) => <code key={syntax}>{syntax}</code>)}</div>
@@ -303,10 +323,10 @@ function App() {
         onRun={handleRun}
         onCheck={handleCheck}
         onReset={() => { setSqlText(''); setResult(null); setFeedback(null); }}
-        onShowSolution={() => setSqlText(lesson.solution)}
+        onShowSolution={() => setSqlText(activeTask?.solution ?? lesson.solution)}
         disabled={mode === 'sqlite' && sqlite.status !== 'ready'}
       />
-      <HintPanel hint={lesson.hint} open={isHintOpen} onToggle={() => setIsHintOpen((open) => !open)} />
+      <HintPanel hint={activeTask?.hint ?? lesson.hint} open={isHintOpen} onToggle={() => setIsHintOpen((open) => !open)} />
       <FeedbackAlert feedback={feedback} />
       <ResultsPanel result={result} history={history} onHistorySelect={(entry) => { setSqlText(entry.sql); setResult(null); setFeedback(null); }} />
       <TableBuilderModal open={isTableBuilderOpen} onClose={() => setIsTableBuilderOpen(false)} onCreate={handleCreateTable} existingNames={sqlite.schema.map((tableItem) => tableItem.name)} />

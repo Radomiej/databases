@@ -1,4 +1,6 @@
-export const LESSONS = [
+import { buildLessonTasks } from './lessonTasks.js';
+
+const LESSON_DEFINITIONS = [
   {
     id: 'select-limit',
     order: 1,
@@ -203,6 +205,8 @@ export const LESSONS = [
     },
   },
 ];
+
+export const LESSONS = LESSON_DEFINITIONS.map((lesson) => ({ ...lesson, tasks: buildLessonTasks(lesson) }));
 
 export const LESSON_MAP = Object.fromEntries(LESSONS.map((lesson) => [lesson.id, lesson]));
 

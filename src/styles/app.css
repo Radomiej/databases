@@ -150,10 +150,31 @@ button { cursor: pointer; }
 .database-status.is-ready { color: #28875c; background: #f2fbf6; border-color: #d3efdf; }
 .status-pulse { width: 7px; height: 7px; background: #aab8c2; border-radius: 50%; }
 .database-status.is-ready .status-pulse { background: #31bd77; box-shadow: 0 0 0 3px rgba(49, 189, 119, 0.12); }
-.task-callout { display: flex; gap: 13px; align-items: flex-start; padding: 14px 16px; margin-top: 22px; background: #f5f9fc; border: 1px solid #dfeaf2; border-radius: var(--radius); }
-.task-icon { display: grid; flex: 0 0 30px; width: 30px; height: 30px; place-items: center; color: #2184d5; font-size: 1.02rem; background: #dfedfb; border-radius: 8px; }
-.task-label { margin-bottom: 4px; color: #4b6e8c; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-.task-callout p { margin: 0; color: #2d4258; font-size: 0.84rem; font-weight: 650; line-height: 1.45; }
+.task-callout { display: grid; gap: 13px; padding: 16px; margin-top: 22px; background: linear-gradient(135deg, #f5f9fc, #f1faf9); border: 1px solid #d5e7ee; border-radius: var(--radius); }
+.task-callout-header { display: flex; gap: 11px; align-items: flex-start; }
+.task-icon { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; color: #e25735; font-size: 1.15rem; background: #fff0eb; border: 1px solid #f6d4c8; border-radius: 9px; }
+.task-callout-heading { min-width: 0; }
+.task-label { margin-bottom: 2px; color: #4b6e8c; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.task-callout-heading h2 { margin: 0; color: #243c52; font-size: 1rem; font-weight: 780; }
+.task-callout-heading p { margin: 3px 0 0; color: #8095a6; font-size: 0.68rem; }
+.task-session-badge { display: inline-flex; flex: 0 0 auto; gap: 5px; align-items: center; margin-left: auto; padding: 5px 7px; color: #278560; font-size: 0.61rem; font-weight: 800; background: #ebfaf1; border: 1px solid #cdeed9; border-radius: 999px; }
+.task-session-badge i { font-size: 0.65rem; }
+.task-checklist { display: grid; gap: 7px; }
+.lesson-task-item { display: grid; grid-template-columns: 27px minmax(0, 1fr) 18px; gap: 9px; align-items: center; width: 100%; padding: 9px 10px; color: #486277; text-align: left; background: rgba(255, 255, 255, 0.75); border: 1px solid #dce8ed; border-radius: 8px; transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+.lesson-task-item:hover { background: #fff; border-color: #9bd8d4; box-shadow: 0 5px 14px rgba(42, 126, 132, 0.08); transform: translateY(-1px); }
+.lesson-task-item.is-active { background: #fff; border-color: #47b4b0; box-shadow: 0 0 0 3px rgba(42, 166, 162, 0.1); }
+.lesson-task-item.is-completed { border-color: #bfe7ce; }
+.lesson-task-check { display: grid; width: 27px; height: 27px; place-items: center; color: #668196; font-size: 0.68rem; font-weight: 800; background: #edf3f6; border-radius: 50%; }
+.lesson-task-item.is-active .lesson-task-check { color: #168f91; background: #e4f8f6; }
+.lesson-task-item.is-completed .lesson-task-check { color: #fff; background: #35ae72; }
+.lesson-task-copy { display: grid; min-width: 0; gap: 2px; }
+.lesson-task-meta { color: #8a9eae; font-size: 0.57rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.lesson-task-copy strong { overflow: hidden; color: #345169; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
+.lesson-task-prompt { color: #61798a; font-size: 0.68rem; line-height: 1.35; }
+.lesson-task-arrow { color: #9aacb9; font-size: 1.1rem; }
+.lesson-task-item.is-active .lesson-task-arrow { color: #1e9695; }
+.task-callout-note { display: flex; gap: 7px; align-items: flex-start; padding-top: 2px; color: #728b9b; font-size: 0.64rem; line-height: 1.4; }
+.task-callout-note i { flex: 0 0 auto; padding-top: 1px; color: #2b9b9b; }
 
 .syntax-strip { display: flex; gap: 12px; align-items: flex-start; padding: 13px 0 10px; }
 .syntax-strip-label { display: flex; flex: 0 0 auto; gap: 6px; align-items: center; padding-top: 3px; color: #8597a9; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
