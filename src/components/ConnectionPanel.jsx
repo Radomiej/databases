@@ -10,6 +10,9 @@ function ConnectionPanel({
   allowMutations = false,
   mutationsAvailable = false,
   onAllowMutationsChange,
+  allowSchemaMutations = false,
+  schemaMutationsAvailable = false,
+  onAllowSchemaMutationsChange,
 }) {
   const update = (key, value) => onChange({ ...connection, [key]: key === 'port' ? Number(value) || '' : value });
   const statusLabel = status === 'loading' ? 'Sprawdzam...' : status === 'connected' ? 'Połączono' : status === 'error' ? 'Błąd połączenia' : 'Nie sprawdzono';
@@ -33,7 +36,8 @@ function ConnectionPanel({
       </div>
       <div className="connection-options">
         <label className="connection-checkbox"><input type="checkbox" checked={rememberConnection} onChange={(event) => onRememberChange(event.target.checked)} /> Zapamiętaj pozostałe pola <span>(bez hasła)</span></label>
-        <label className={`connection-checkbox connection-write-option ${mutationsAvailable ? '' : 'is-disabled'}`} title={mutationsAvailable ? 'Włączaj tylko dla lokalnej bazy ćwiczeniowej.' : 'Ustaw MYSQL_ALLOW_MUTATIONS=true w server/.env.'}><input type="checkbox" checked={allowMutations} disabled={!mutationsAvailable} onChange={(event) => onAllowMutationsChange(event.target.checked)} /> Zezwól na zapis</label>
+        <label className={`connection-checkbox connection-write-option ${mutationsAvailable ? '' : 'is-disabled'}`} title={mutationsAvailable ? 'Włączaj tylko dla lokalnej bazy ćwiczeniowej.' : 'Ustaw MYSQL_ALLOW_MUTATIONS=true w server/.env.'}><input type="checkbox" checked={allowMutations} disabled={!mutationsAvailable} onChange={(event) => onAllowMutationsChange(event.target.checked)} /> Zezwól na zapis danych</label>
+        <label className={`connection-checkbox connection-write-option ${schemaMutationsAvailable ? '' : 'is-disabled'}`} title={schemaMutationsAvailable ? 'Pozwala wykonywać CREATE TABLE i ALTER TABLE na wybranej bazie.' : 'Ustaw MYSQL_ALLOW_SCHEMA_MUTATIONS=true w server/.env.'}><input type="checkbox" checked={allowSchemaMutations} disabled={!schemaMutationsAvailable} onChange={(event) => onAllowSchemaMutationsChange(event.target.checked)} /> Zezwól na zmiany struktury</label>
       </div>
       {(statusMessage || serverVersion) && <div className={`connection-message ${status === 'connected' ? 'is-success' : status === 'error' ? 'is-error' : ''}`} role="status"><i className={`bi ${status === 'connected' ? 'bi-check-circle' : status === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle'}`} aria-hidden="true" /><span>{statusMessage}{serverVersion && <> · MySQL {serverVersion}</>}</span></div>}
     </section>

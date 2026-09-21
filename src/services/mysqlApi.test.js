@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getConnectorHealth, listRelations, testConnection } from './mysqlApi.js';
+import { getConnectorHealth, listRelations, runQuery, testConnection } from './mysqlApi.js';
 
 describe('mysql api client', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
@@ -27,5 +27,15 @@ describe('mysql api client', () => {
     await expect(listRelations({ host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' }))
       .resolves.toMatchObject({ relationships: [{ from: 'zamowienia.klient_id', to: 'klienci.id' }] });
     expect(fetch).toHaveBeenCalledWith('/api/mysql/relations', expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('sends schema mutation capability separately from data writes', async () => {
+    fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, statementType: 'DDL' }) });
+    await runQuery({ database: 'inf03_lab' }, 'CREATE TABLE osoby (id INT);', false, true);
+    expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({
+      sql: 'CREATE TABLE osoby (id INT);',
+      allowMutations: false,
+      allowSchemaMutations: true,
+    });
   });
 });

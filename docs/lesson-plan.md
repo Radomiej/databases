@@ -74,6 +74,30 @@ Cel: połączyć `LEFT JOIN`, `COUNT`, `CASE`, `COALESCE`, `GROUP BY`, `HAVING` 
 Rezultat: raport filmów z liczbą biletów i przychodem.  
 Baza: `kino`.
 
+## 13. CREATE TABLE
+
+Cel: utworzyć tabelę od podstaw w pustej bazie.
+Ćwicz: nazwy tabel, kolumny, typy i `PRIMARY KEY`.
+Baza: `Laboratorium struktury`.
+
+## 14. Kolumny i ograniczenia
+
+Cel: określać, jakie wartości mogą trafić do kolumn.
+Ćwicz: `NOT NULL` i `DEFAULT` razem z kluczem głównym.
+Baza: `Laboratorium struktury`.
+
+## 15. ALTER TABLE
+
+Cel: zmieniać strukturę istniejącej tabeli bez usuwania jej danych.
+Ćwicz: `ALTER TABLE ... ADD COLUMN`.
+Baza: `Laboratorium struktury`.
+
+## 16. Relacje i inspekcja schematu
+
+Cel: połączyć tabele kluczem obcym i rozpoznać relację w schemacie.
+Ćwicz: `FOREIGN KEY`, `REFERENCES` oraz `PRAGMA foreign_key_list`.
+Baza: `Laboratorium struktury`.
+
 ## Checklista INF.03
 
 - [ ] Potrafię rozpoznać tabelę główną i relacje po kluczach obcych.

@@ -93,6 +93,7 @@ export function useSqliteDatabase(datasetId, customTables = [], relationships = 
     status: state.status,
     error: state.error,
     schema: state.schema,
+    getSchema: () => (databaseRef.current ? getSqliteSchema(databaseRef.current.db) : state.schema),
     execute,
     reset,
     applyRelationships,

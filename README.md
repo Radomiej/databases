@@ -5,6 +5,8 @@ Lokalne laboratorium SQL dla przygotowania do INF.03. Aplikacja ma dwa tryby:
 - **SQLite — nauka** — działa bez MySQL, tworzy bazę w przeglądarce i pozwala wykonywać oceniane lekcje.
 - **MySQL — connector** — React wysyła zapytania do lokalnego API Node/Express, które łączy się z serwerem MySQL przez `mysql2`.
 
+Kurs obejmuje także dataset **Laboratorium struktury** z pustą bazą SQLite. Cztery kolejne lekcje ćwiczą `CREATE TABLE`, konfigurację kolumn i ograniczeń, `ALTER TABLE` oraz klucze obce. Zadania DDL są oceniane na podstawie rzeczywistego schematu, a nie tylko tekstu zapytania.
+
 W panelu **Schemat bazy** kliknij przycisk `⋮` przy tabeli i wybierz **Podgląd danych**, aby otworzyć pierwsze 50 rekordów z aktualnej bazy. W zakładce **Relacje** możesz w trybie SQLite dodawać, zmieniać i usuwać rzeczywiste klucze obce. Zmiany są zapisywane w projekcie przeglądarki; **Resetuj relacje** przywraca relacje startowe bieżącego datasetu, ale nie usuwa własnych tabel.
 
 phpMyAdmin nie jest endpointem aplikacji. Możesz używać go do importu skryptu i sprawdzania danych, ale connector łączy się bezpośrednio z serwerem MySQL.
@@ -41,7 +43,7 @@ npm run dev:all
 
 Backend działa wyłącznie lokalnie na `http://localhost:3001`.
 
-Po poprawnym połączeniu tryb MySQL pobiera również relacje z `information_schema.KEY_COLUMN_USAGE`. Relacje MySQL są prezentowane jako **Tylko odczyt** — aplikacja nie wykonuje zmian DDL relacji w zewnętrznej bazie.
+Po poprawnym połączeniu tryb MySQL pobiera również relacje z `information_schema.KEY_COLUMN_USAGE`. Relacje MySQL są prezentowane jako **Tylko odczyt** — aplikacja nie wykonuje zmian FK w zewnętrznej bazie.
 
 ## Konfiguracja MySQL
 
@@ -54,12 +56,13 @@ MYSQL_DATABASE=inf03_lab
 MYSQL_USER=root
 MYSQL_PASSWORD=
 MYSQL_ALLOW_MUTATIONS=false
+MYSQL_ALLOW_SCHEMA_MUTATIONS=false
 PORT=3001
 ```
 
 Możesz również wpisać dane bezpośrednio w formularzu connectora. Hasło pozostaje w pamięci aplikacji i nie jest zapisywane. Zaznaczenie „Zapamiętaj pozostałe pola” zapisuje tylko host, port, nazwę bazy i użytkownika.
 
-Domyślnie connector pozwala na `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN` i odczyt przez `WITH`. Operacje `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `ALTER` i `DROP` są blokowane. Włączenie zapisu wymaga ustawienia `MYSQL_ALLOW_MUTATIONS=true` w `server/.env` oraz jawnego włączenia opcji w UI; używaj tego tylko na lokalnej bazie ćwiczeniowej.
+Domyślnie connector pozwala na `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN` i odczyt przez `WITH`. Operacje `INSERT`, `UPDATE` i `DELETE` wymagają `MYSQL_ALLOW_MUTATIONS=true` oraz opcji **Zezwól na zapis danych**. Operacje `CREATE TABLE` i `ALTER TABLE` wymagają osobno `MYSQL_ALLOW_SCHEMA_MUTATIONS=true` oraz opcji **Zezwól na zmiany struktury**. Connector nie udostępnia w kursie poleceń administracyjnych kontami, takich jak `CREATE USER`, `GRANT` czy `REVOKE`.
 
 ## Przygotowanie przykładowej bazy MySQL
 
@@ -80,8 +83,8 @@ Testy obejmują silnik SQLite, wszystkie rozwiązania lekcji, walidator wyników
 
 ## Zawartość
 
-- `src/data/datasets.js` — cztery seedowane bazy: biblioteka, sklep, szkoła, kino.
-- `src/data/lessons.js` — 12 lekcji od SELECT do projektu INF.03.
+- `src/data/datasets.js` — cztery seedowane bazy oraz pusty dataset Laboratorium struktury.
+- `src/data/lessons.js` — 12 lekcji od SELECT do projektu INF.03 oraz 4 lekcje DDL.
 - `src/services/sqliteEngine.js` — wykonywanie zapytań SQLite w przeglądarce.
 - `src/services/mysqlApi.js` — klient lokalnego API MySQL.
 - `server/` — Express + mysql2, bez PHP.

@@ -1,4 +1,5 @@
 import { buildLessonTasks } from './lessonTasks.js';
+import { STRUCTURE_LESSONS } from './structureLessons.js';
 
 const LESSON_DEFINITIONS = [
   {
@@ -40,7 +41,7 @@ const LESSON_DEFINITIONS = [
     theory: 'ORDER BY ustala kolejność wierszy w wyniku. Domyślnie sortowanie rosnące zapisuje się jako ASC, a malejące jako DESC. ORDER BY można połączyć z LIMIT, aby wybrać na przykład trzy najdroższe książki.',
     syntax: ['ORDER BY kolumna ASC;', 'ORDER BY kolumna DESC LIMIT 3;'],
     example: 'SELECT tytul, cena FROM ksiazki ORDER BY cena ASC;',
-    task: 'Pokaż trzy najdroższe książki: tytuł i cenę, od najdroższej.',
+    task: 'Pokaż trzy najdroższe książki, podając ich tytuły i ceny, od najdroższej.',
     hint: 'Sortuj po cenie malejąco i dodaj LIMIT 3.',
     solution: 'SELECT tytul, cena FROM ksiazki ORDER BY cena DESC LIMIT 3;',
     successMessage: 'Brawo — umiesz połączyć filtrowanie wyniku z kontrolą kolejności.',
@@ -55,7 +56,7 @@ const LESSON_DEFINITIONS = [
     theory: 'LIKE wyszukuje wzorce tekstowe, a znak % oznacza dowolny ciąg znaków. IN skraca kilka warunków równości, BETWEEN opisuje zakres, a brak wartości sprawdzamy przez IS NULL lub IS NOT NULL — nigdy przez = NULL.',
     syntax: ["WHERE tytul LIKE 'P%';", 'WHERE rok_wydania BETWEEN 1900 AND 2000;', 'WHERE data_zwrotu IS NULL;'],
     example: "SELECT tytul FROM ksiazki WHERE tytul LIKE 'P%';",
-    task: 'Pokaż czytelnika, którego wypożyczenie nie zostało jeszcze zwrócone i którego imię zaczyna się na T.',
+    task: 'Pokaż czytelnika, którego książka nie została jeszcze zwrócona i którego imię zaczyna się na literę T.',
     hint: "Połącz data_zwrotu IS NULL z czytelnik LIKE 'T%'.",
     solution: "SELECT czytelnik FROM wypozyczenia WHERE data_zwrotu IS NULL AND czytelnik LIKE 'T%';",
     successMessage: 'Dobrze — opanowałeś wzorce tekstowe i najczęstszy przypadek użycia NULL.',
@@ -70,7 +71,7 @@ const LESSON_DEFINITIONS = [
     theory: 'Funkcje agregujące obliczają wartość dla wielu wierszy. COUNT liczy rekordy, SUM dodaje liczby, AVG oblicza średnią, a MIN i MAX wybierają skrajne wartości. Alias AS nadaje wynikowej kolumnie czytelną nazwę.',
     syntax: ['COUNT(*)', 'SUM(ilosc * cena_sztukowa)', 'ROUND(AVG(cena), 2) AS srednia_cena'],
     example: 'SELECT kategoria, COUNT(*) AS liczba FROM produkty GROUP BY kategoria;',
-    task: 'Oblicz liczbę produktów i średnią cenę zaokrągloną do dwóch miejsc.',
+    task: 'Oblicz liczbę produktów oraz średnią cenę, zaokrąglając wynik do dwóch miejsc po przecinku.',
     hint: 'Użyj COUNT(*) oraz ROUND(AVG(cena), 2) bez GROUP BY.',
     solution: 'SELECT COUNT(*) AS liczba_produktow, ROUND(AVG(cena), 2) AS srednia_cena FROM produkty;',
     successMessage: 'Świetnie — potrafisz tworzyć podsumowania całej tabeli.',
@@ -119,7 +120,7 @@ const LESSON_DEFINITIONS = [
     theory: 'JOIN łączy rekordy na podstawie relacji między kolumnami. INNER JOIN zwraca tylko te wiersze, dla których dopasowanie istnieje po obu stronach. Alias tabeli skraca zapytanie i ułatwia czytanie.',
     syntax: ['FROM zamowienia z INNER JOIN klienci k ON k.id = z.klient_id;', 'SELECT z.id, k.imie FROM ...;'],
     example: 'SELECT z.id, k.imie, z.status FROM zamowienia z INNER JOIN klienci k ON k.id = z.klient_id;',
-    task: 'Pokaż cztery pierwsze zamówienia razem z imieniem, nazwiskiem klienta oraz statusem.',
+    task: 'Pokaż cztery pierwsze zamówienia wraz z imieniem i nazwiskiem klienta oraz jego statusem.',
     hint: 'Połącz zamowienia z klienci przez z.klient_id = k.id i dodaj LIMIT 4.',
     solution: 'SELECT z.id, k.imie, k.nazwisko, z.status FROM zamowienia z INNER JOIN klienci k ON k.id = z.klient_id ORDER BY z.id LIMIT 4;',
     successMessage: 'Dobrze — dane z dwóch tabel są teraz w jednym raporcie.',
@@ -153,7 +154,7 @@ const LESSON_DEFINITIONS = [
     theory: 'Większy raport może wymagać kilku połączeń. Każda tabela dostaje krótki alias, a warunek ON opisuje konkretną relację. Czytelny zapis z aliasami jest szczególnie ważny, gdy kilka tabel ma kolumnę id lub nazwisko.',
     syntax: ['JOIN uczniowie u ON u.id = o.uczen_id', 'JOIN klasy k ON k.id = u.klasa_id', 'JOIN przedmioty p ON p.id = o.przedmiot_id'],
     example: 'SELECT u.nazwisko, k.symbol, p.nazwa, o.ocena FROM oceny o JOIN uczniowie u ...;',
-    task: 'Pokaż oceny z baz danych: uczeń, klasa, przedmiot i ocena.',
+    task: 'Pokaż oceny z przedmiotu „Bazy danych”: imię i nazwisko ucznia, klasę, przedmiot oraz ocenę.',
     hint: 'Połącz oceny z uczniami, klasami i przedmiotami. Ogranicz przedmiot przez WHERE p.nazwa = \'Bazy danych\'.',
     solution: "SELECT u.imie, u.nazwisko, k.symbol, p.nazwa, o.ocena FROM oceny o JOIN uczniowie u ON u.id = o.uczen_id JOIN klasy k ON k.id = u.klasa_id JOIN przedmioty p ON p.id = o.przedmiot_id WHERE p.nazwa = 'Bazy danych' ORDER BY u.id;",
     successMessage: 'Brawo — to jest typowy wielotabelowy raport egzaminacyjny.',
@@ -179,8 +180,8 @@ const LESSON_DEFINITIONS = [
     theory: 'Podzapytanie to SELECT umieszczony wewnątrz innego zapytania. Możesz użyć go do znalezienia wartości maksymalnej, średniej lub listy identyfikatorów. Konstrukcja WITH nadaje podzapytaniu nazwę i może poprawić czytelność większego raportu.',
     syntax: ['WHERE ocena = (SELECT MAX(ocena) FROM oceny)', 'WITH najlepsze AS (SELECT ...) SELECT ... FROM najlepsze;'],
     example: 'SELECT nazwisko FROM uczniowie WHERE id IN (SELECT uczen_id FROM oceny WHERE ocena = 5);',
-    task: 'Pokaż uczniów, którzy otrzymali przynajmniej jedną ocenę 5.',
-    hint: 'W podzapytaniu wybierz uczen_id z oceny = (SELECT MAX(ocena) FROM oceny).',
+    task: 'Pokaż uczniów, którzy otrzymali co najmniej jedną ocenę 5.',
+    hint: 'W podzapytaniu wybierz uczen_id z tabeli oceny, stosując warunek ocena = (SELECT MAX(ocena) FROM oceny).',
     solution: 'SELECT imie, nazwisko FROM uczniowie WHERE id IN (SELECT uczen_id FROM oceny WHERE ocena = (SELECT MAX(ocena) FROM oceny)) ORDER BY id;',
     successMessage: 'Świetnie — podzapytania nie są już tajemnicą.',
     expected: { columns: ['imie', 'nazwisko'], rows: [['Anna', 'Nowak'], ['Tomasz', 'Zieliński'], ['Julia', 'Kamińska']], strictOrder: true },
@@ -191,10 +192,10 @@ const LESSON_DEFINITIONS = [
     title: 'Projekt INF.03',
     datasetId: 'kino',
     difficulty: 'Projekt',
-    theory: 'W zadaniu końcowym połączysz kilka umiejętności: LEFT JOIN, agregacje, CASE, COALESCE, GROUP BY i HAVING. Raport powinien zachować filmy, ale pokazać tylko te, które mają przynajmniej jeden bilet. Przychód licz wyłącznie dla biletów opłaconych.',
+    theory: 'W zadaniu końcowym połączysz kilka umiejętności: LEFT JOIN, agregacje, CASE, COALESCE, GROUP BY i HAVING. Raport powinien zachować filmy, ale pokazać tylko te, które mają przynajmniej jeden bilet. Przychód obliczaj wyłącznie na podstawie opłaconych biletów.',
     syntax: ['COALESCE(wartosc, 0)', "SUM(CASE WHEN status = 'opłacony' THEN cena ELSE 0 END)", 'GROUP BY f.id, f.tytul HAVING COUNT(b.id) > 0'],
     example: 'Raport filmu, liczby biletów i przychodu z opłaconych biletów.',
-    task: 'Zbuduj raport filmów z liczbą biletów i przychodem, posortowany malejąco po przychodzie.',
+    task: 'Zbuduj raport filmów z liczbą biletów i przychodem, a następnie posortuj go malejąco według przychodu.',
     hint: 'Połącz filmy → seanse → bilety. Grupuj po filmie, odfiltruj HAVING COUNT(b.id) > 0.',
     solution: "SELECT f.tytul, COUNT(b.id) AS liczba_biletow, COALESCE(ROUND(SUM(CASE WHEN b.status = 'opłacony' THEN s.cena ELSE 0 END), 2), 0) AS przychod FROM filmy f LEFT JOIN seanse s ON s.film_id = f.id LEFT JOIN bilety b ON b.seans_id = s.id GROUP BY f.id, f.tytul HAVING COUNT(b.id) > 0 ORDER BY przychod DESC;",
     successMessage: 'Zaliczone — potrafisz zbudować pełny raport na kilku powiązanych tabelach.',
@@ -206,10 +207,13 @@ const LESSON_DEFINITIONS = [
   },
 ];
 
-export const LESSONS = LESSON_DEFINITIONS.map((lesson) => ({ ...lesson, tasks: buildLessonTasks(lesson) }));
+const CORE_LESSONS = LESSON_DEFINITIONS.map((lesson) => ({ ...lesson, tasks: buildLessonTasks(lesson) }));
 
-export const LESSON_MAP = Object.fromEntries(LESSONS.map((lesson) => [lesson.id, lesson]));
+export const LESSONS = [...CORE_LESSONS, ...STRUCTURE_LESSONS];
+export const COURSE_LESSONS = LESSONS;
+
+export const LESSON_MAP = Object.fromEntries(COURSE_LESSONS.map((lesson) => [lesson.id, lesson]));
 
 export function getLesson(lessonId) {
-  return LESSON_MAP[lessonId] ?? LESSONS[0];
+  return LESSON_MAP[lessonId] ?? COURSE_LESSONS[0];
 }

@@ -46,7 +46,7 @@ export async function createSqliteDatabase(dataset, initializer = initSqlJs, loc
   const SQL = await initializer({ locateFile });
   const db = new SQL.Database();
   db.run('PRAGMA foreign_keys = ON;');
-  db.run(dataset.seedSql);
+  if (dataset.seedSql?.trim()) db.run(dataset.seedSql);
 
   return {
     db,

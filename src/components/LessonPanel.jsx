@@ -52,7 +52,7 @@ function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite', activeT
               <button type="button" className={`lesson-task-item ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`} aria-pressed={isActive} onClick={() => onTaskChange?.(task.id)} key={task.id}>
                 <span className="lesson-task-check" aria-hidden="true">{isCompleted ? <i className="bi bi-check2" /> : index + 1}</span>
                 <span className="lesson-task-copy">
-                  <span className="lesson-task-meta">{index === 0 ? 'Prowadzone' : 'Samodzielne'} · Zadanie {index + 1}</span>
+                  <span className="lesson-task-meta">{index === 0 ? 'Pokazowe' : 'Samodzielne'} · Zadanie {index + 1}</span>
                   <strong>{task.title}</strong>
                   <span className="lesson-task-prompt">{task.prompt}</span>
                 </span>
@@ -64,7 +64,7 @@ function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite', activeT
 
         <div className="task-callout-note">
           <i className="bi bi-info-circle-fill" aria-hidden="true" />
-          <span>{activeTask?.id === tasks[0]?.id ? 'Pierwsze zadanie jest prowadzone — przykład jest już w edytorze SQL.' : 'To zadanie rozwiązujesz samodzielnie. Napisz zapytanie i kliknij „Sprawdź”.'}</span>
+          <span>{activeTask?.id === tasks[0]?.id ? 'Pierwsze zadanie jest pokazowe — przykład znajdziesz już w edytorze SQL.' : 'To zadanie rozwiązujesz samodzielnie. Napisz zapytanie, a następnie kliknij „Sprawdź”.'}</span>
         </div>
       </section>
     </section>

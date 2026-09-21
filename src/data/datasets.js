@@ -439,6 +439,16 @@ export const DATASETS = [
         (9, 6, 4, 'C02', 'opłacony');
     `,
   },
+  {
+    ...commonDatasetFields,
+    id: 'structure-lab',
+    name: 'Laboratorium struktury',
+    level: 'DDL',
+    summary: 'Pusta baza do tworzenia tabel, kolumn, ograniczeń i relacji.',
+    tables: [],
+    relationships: [],
+    seedSql: '',
+  },
 ];
 
 export const DATASET_MAP = Object.fromEntries(DATASETS.map((dataset) => [dataset.id, dataset]));

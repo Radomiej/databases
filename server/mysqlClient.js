@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 import { performance } from 'node:perf_hooks';
-import { classifyMysqlStatement, isMysqlReadOnly, validateMysqlConfig } from './queryPolicy.js';
+import { classifyMysqlStatement, isMysqlDataMutation, isMysqlReadOnly, isMysqlSchemaMutation, validateMysqlConfig } from './queryPolicy.js';
 
 function resultDuration(startedAt) {
   return Number((performance.now() - startedAt).toFixed(2));
@@ -79,8 +79,14 @@ export async function executeMysqlQuery(config, sql) {
   if (!String(sql ?? '').trim()) {
     return { ok: false, errorType: 'empty', message: 'Wpisz zapytanie SQL.', hint: 'Zacznij od SELECT.', durationMs: 0, statementType };
   }
-  if (!isMysqlReadOnly(sql) && !config.allowMutations) {
-    return { ok: false, errorType: 'policy', message: 'Operacje modyfikujące są wyłączone w connectorze.', hint: 'Włącz zapis tylko dla lokalnej bazy ćwiczeniowej i ustaw MYSQL_ALLOW_MUTATIONS=true.', durationMs: resultDuration(startedAt), statementType };
+  const allowedByPolicy = isMysqlReadOnly(sql)
+    || (isMysqlDataMutation(sql) && config.allowMutations)
+    || (isMysqlSchemaMutation(sql) && config.allowSchemaMutations);
+  if (!allowedByPolicy) {
+    const schemaHint = isMysqlSchemaMutation(sql)
+      ? 'Włącz „Zezwól na zmiany struktury” i ustaw MYSQL_ALLOW_SCHEMA_MUTATIONS=true w server/.env.'
+      : 'Włącz zapis tylko dla lokalnej bazy ćwiczeniowej i ustaw MYSQL_ALLOW_MUTATIONS=true.';
+    return { ok: false, errorType: 'policy', message: 'Ta operacja jest wyłączona w connectorze.', hint: schemaHint, durationMs: resultDuration(startedAt), statementType };
   }
 
   let connection;

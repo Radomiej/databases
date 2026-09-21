@@ -1,0 +1,92 @@
+const schemaTask = (id, title, prompt, hint, solution, expectedSchema) => ({
+  id,
+  title,
+  prompt,
+  hint,
+  solution,
+  expectedSchema,
+  successMessage: 'Zadanie zaliczone — schemat bazy odpowiada wymaganiom.',
+});
+
+const columns = (...items) => items;
+const column = (name, type, settings = {}) => ({ name, type, ...settings });
+const tableSchema = (name, tableColumns, settings = {}) => ({ name, columns: tableColumns, ...settings });
+
+export const STRUCTURE_LESSONS = [
+  {
+    id: 'create-table',
+    order: 13,
+    title: 'CREATE TABLE',
+    datasetId: 'structure-lab',
+    difficulty: 'Struktura',
+    theory: 'CREATE TABLE tworzy tabelę. W nawiasie definiujesz kolumny, ich typy oraz podstawowe ustawienia. W pustej bazie możesz od razu zbudować własny schemat.',
+    syntax: ['CREATE TABLE nazwa (kolumna typ);', 'CREATE TABLE osoby (id INTEGER PRIMARY KEY, imie TEXT NOT NULL);'],
+    example: 'CREATE TABLE osoby (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, nazwisko TEXT NOT NULL);',
+    task: 'Utwórz tabelę osoby z identyfikatorem oraz imieniem i nazwiskiem.',
+    hint: 'Użyj CREATE TABLE. Kolumnę id ustaw jako INTEGER PRIMARY KEY, a imie i nazwisko jako TEXT NOT NULL.',
+    solution: 'CREATE TABLE osoby (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, nazwisko TEXT NOT NULL);',
+    expectedSchema: { tables: [tableSchema('osoby', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('imie', 'TEXT', { notNull: true }), column('nazwisko', 'TEXT', { notNull: true })), { exactColumns: true, foreignKeys: [] })] },
+    tasks: [
+      schemaTask('create-table-guided', 'Zadanie pokazowe', 'Utwórz tabelę osoby z identyfikatorem oraz imieniem i nazwiskiem.', 'Użyj CREATE TABLE. Kolumnę id ustaw jako INTEGER PRIMARY KEY, a imie i nazwisko jako TEXT NOT NULL.', 'CREATE TABLE osoby (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, nazwisko TEXT NOT NULL);', { tables: [tableSchema('osoby', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('imie', 'TEXT', { notNull: true }), column('nazwisko', 'TEXT', { notNull: true })), { exactColumns: true, foreignKeys: [] })] }),
+      schemaTask('create-products-table', 'Tabela produktów', 'Utwórz tabelę produkty_lab z id, nazwą produktu i ceną.', 'Zdefiniuj id jako INTEGER PRIMARY KEY, nazwa jako TEXT NOT NULL, a cena jako REAL NOT NULL.', 'CREATE TABLE produkty_lab (id INTEGER PRIMARY KEY, nazwa TEXT NOT NULL, cena REAL NOT NULL);', { tables: [tableSchema('produkty_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('nazwa', 'TEXT', { notNull: true }), column('cena', 'REAL', { notNull: true })), { exactColumns: true, foreignKeys: [] })] }),
+      schemaTask('create-reservations-table', 'Tabela rezerwacji', 'Utwórz tabelę rezerwacje_lab z id, terminem i opcjonalnym opisem.', 'Użyj typu DATE dla terminu. Kolumna opis może przyjmować NULL.', 'CREATE TABLE rezerwacje_lab (id INTEGER PRIMARY KEY, termin DATE NOT NULL, opis TEXT);', { tables: [tableSchema('rezerwacje_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('termin', 'DATE', { notNull: true }), column('opis', 'TEXT')), { exactColumns: true, foreignKeys: [] })] }),
+    ],
+  },
+  {
+    id: 'column-constraints',
+    order: 14,
+    title: 'Kolumny i ograniczenia',
+    datasetId: 'structure-lab',
+    difficulty: 'Struktura',
+    theory: 'Konfiguracja kolumn określa, jakie dane można zapisać. PRIMARY KEY identyfikuje rekord, NOT NULL wymaga wartości, a DEFAULT podstawia wartość, gdy użytkownik jej nie poda.',
+    syntax: ['kolumna INTEGER PRIMARY KEY', 'kolumna TEXT NOT NULL DEFAULT \'aktywny\'', 'kolumna INTEGER NOT NULL DEFAULT 0'],
+    example: "CREATE TABLE kursanci_lab (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'aktywny');",
+    task: 'Utwórz tabelę kursanci_lab z wymaganym imieniem i statusem domyślnie ustawionym na aktywny.',
+    hint: "Użyj TEXT NOT NULL DEFAULT 'aktywny' dla kolumny status.",
+    solution: "CREATE TABLE kursanci_lab (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'aktywny');",
+    expectedSchema: { tables: [tableSchema('kursanci_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('imie', 'TEXT', { notNull: true }), column('status', 'TEXT', { notNull: true, defaultValue: 'aktywny' })), { exactColumns: true, foreignKeys: [] })] },
+    tasks: [
+      schemaTask('constraints-guided', 'Zadanie pokazowe', 'Utwórz tabelę kursanci_lab z wymaganym imieniem i statusem domyślnie ustawionym na aktywny.', "Użyj TEXT NOT NULL DEFAULT 'aktywny' dla kolumny status.", "CREATE TABLE kursanci_lab (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'aktywny');", { tables: [tableSchema('kursanci_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('imie', 'TEXT', { notNull: true }), column('status', 'TEXT', { notNull: true, defaultValue: 'aktywny' })), { exactColumns: true, foreignKeys: [] })] }),
+      schemaTask('constraints-products', 'Stan magazynowy', 'Utwórz tabelę produkty_konfig z kodem produktu i stanem magazynowym domyślnie równym zero.', 'Kolumny kod i stan mają być wymagane. Użyj DEFAULT 0 dla stanu.', 'CREATE TABLE produkty_konfig (id INTEGER PRIMARY KEY, kod TEXT NOT NULL, stan INTEGER NOT NULL DEFAULT 0);', { tables: [tableSchema('produkty_konfig', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('kod', 'TEXT', { notNull: true }), column('stan', 'INTEGER', { notNull: true, defaultValue: 0 })), { exactColumns: true, foreignKeys: [] })] }),
+      schemaTask('constraints-settings', 'Ustawienie z wartością domyślną', 'Utwórz tabelę ustawienia_lab z nazwą wymaganą oraz opcjonalną wartością domyślną „brak”.', "Użyj kolumny wartosc TEXT DEFAULT 'brak'. Nie dodawaj NOT NULL do wartosc.", "CREATE TABLE ustawienia_lab (id INTEGER PRIMARY KEY, nazwa TEXT NOT NULL, wartosc TEXT DEFAULT 'brak');", { tables: [tableSchema('ustawienia_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('nazwa', 'TEXT', { notNull: true }), column('wartosc', 'TEXT', { defaultValue: 'brak' })), { exactColumns: true, foreignKeys: [] })] }),
+    ],
+  },
+  {
+    id: 'alter-table',
+    order: 15,
+    title: 'ALTER TABLE',
+    datasetId: 'structure-lab',
+    difficulty: 'Struktura',
+    theory: 'ALTER TABLE zmienia istniejącą tabelę. W tym kursie dodajemy nowe kolumny, zachowując dotychczasowe dane. Wykonaj najpierw zadania z lekcji CREATE TABLE, ponieważ te ćwiczenia korzystają z utworzonych tam tabel.',
+    syntax: ['ALTER TABLE tabela ADD COLUMN kolumna typ;', 'ALTER TABLE osoby ADD COLUMN email TEXT;'],
+    example: 'ALTER TABLE osoby ADD COLUMN email TEXT;',
+    task: 'Dodaj do tabeli osoby kolumnę email typu TEXT.',
+    hint: 'Tabela osoby powinna pochodzić z poprzedniej lekcji. Użyj ALTER TABLE osoby ADD COLUMN email TEXT.',
+    solution: 'ALTER TABLE osoby ADD COLUMN email TEXT;',
+    expectedSchema: { tables: [tableSchema('osoby', [column('id'), column('imie'), column('nazwisko'), column('email', 'TEXT')])] },
+    tasks: [
+      schemaTask('alter-email', 'Zadanie pokazowe', 'Dodaj do tabeli osoby kolumnę email typu TEXT.', 'Tabela osoby powinna pochodzić z poprzedniej lekcji. Użyj ALTER TABLE osoby ADD COLUMN email TEXT.', 'ALTER TABLE osoby ADD COLUMN email TEXT;', { tables: [tableSchema('osoby', [column('id'), column('imie'), column('nazwisko'), column('email', 'TEXT')])] }),
+      schemaTask('alter-stock', 'Kolumna stanu', 'Dodaj do tabeli produkty_lab kolumnę stan typu INTEGER z wartością domyślną 0.', 'Tabela produkty_lab powinna już istnieć. Dodaj kolumnę przez ALTER TABLE ... ADD COLUMN.', 'ALTER TABLE produkty_lab ADD COLUMN stan INTEGER DEFAULT 0;', { tables: [tableSchema('produkty_lab', [column('id'), column('nazwa'), column('cena'), column('stan', 'INTEGER', { defaultValue: 0 })])] }),
+      schemaTask('alter-status', 'Status rezerwacji', 'Dodaj do tabeli rezerwacje_lab wymaganą kolumnę status typu TEXT z wartością domyślną „nowa”.', 'Tabela rezerwacje_lab powinna już istnieć. Użyj NOT NULL DEFAULT \'nowa\'.', "ALTER TABLE rezerwacje_lab ADD COLUMN status TEXT NOT NULL DEFAULT 'nowa';", { tables: [tableSchema('rezerwacje_lab', [column('id'), column('termin'), column('opis'), column('status', 'TEXT', { notNull: true, defaultValue: 'nowa' })])] }),
+    ],
+  },
+  {
+    id: 'schema-relations',
+    order: 16,
+    title: 'Relacje i inspekcja schematu',
+    datasetId: 'structure-lab',
+    difficulty: 'Struktura',
+    theory: 'Klucz obcy łączy kolumnę z kluczem głównym innej tabeli. Relację definiujesz przez FOREIGN KEY ... REFERENCES. Po wykonaniu zadania sprawdź ją w zakładce Relacje albo przez PRAGMA foreign_key_list w SQLite.',
+    syntax: ['FOREIGN KEY (kolumna_id) REFERENCES tabela(id)', 'PRAGMA foreign_key_list(wypozyczenia_lab);'],
+    example: 'CREATE TABLE wypozyczenia_lab (id INTEGER PRIMARY KEY, osoba_id INTEGER NOT NULL, FOREIGN KEY (osoba_id) REFERENCES osoby(id));',
+    task: 'Utwórz tabelę wypozyczenia_lab połączoną z tabelą osoby przez klucz obcy osoba_id.',
+    hint: 'Tabela osoby powinna już istnieć. Dodaj FOREIGN KEY (osoba_id) REFERENCES osoby(id).',
+    solution: 'CREATE TABLE wypozyczenia_lab (id INTEGER PRIMARY KEY, osoba_id INTEGER NOT NULL, opis TEXT, FOREIGN KEY (osoba_id) REFERENCES osoby(id));',
+    expectedSchema: { tables: [tableSchema('wypozyczenia_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('osoba_id', 'INTEGER', { notNull: true }), column('opis', 'TEXT')), { exactColumns: true, foreignKeys: [{ from: 'osoba_id', table: 'osoby', to: 'id' }] })] },
+    tasks: [
+      schemaTask('relation-guided', 'Zadanie pokazowe', 'Utwórz tabelę wypozyczenia_lab połączoną z tabelą osoby przez klucz obcy osoba_id.', 'Tabela osoby powinna już istnieć. Dodaj FOREIGN KEY (osoba_id) REFERENCES osoby(id).', 'CREATE TABLE wypozyczenia_lab (id INTEGER PRIMARY KEY, osoba_id INTEGER NOT NULL, opis TEXT, FOREIGN KEY (osoba_id) REFERENCES osoby(id));', { tables: [tableSchema('wypozyczenia_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('osoba_id', 'INTEGER', { notNull: true }), column('opis', 'TEXT')), { exactColumns: true, foreignKeys: [{ from: 'osoba_id', table: 'osoby', to: 'id' }] })] }),
+      schemaTask('relation-orders', 'Relacja z produktem', 'Utwórz tabelę zamowienia_lab z kluczem obcym produkt_id wskazującym tabelę produkty_lab.', 'Tabela produkty_lab powinna już istnieć. Połącz produkt_id z produkty_lab(id).', 'CREATE TABLE zamowienia_lab (id INTEGER PRIMARY KEY, produkt_id INTEGER NOT NULL, ilosc INTEGER NOT NULL, FOREIGN KEY (produkt_id) REFERENCES produkty_lab(id));', { tables: [tableSchema('zamowienia_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('produkt_id', 'INTEGER', { notNull: true }), column('ilosc', 'INTEGER', { notNull: true })), { exactColumns: true, foreignKeys: [{ from: 'produkt_id', table: 'produkty_lab', to: 'id' }] })] }),
+      schemaTask('relation-grades', 'Relacja ocen', 'Utwórz tabelę oceny_lab z kluczem obcym osoba_id wskazującym tabelę osoby.', 'Połącz osoba_id z osoby(id), a kolumnę ocena ustaw jako INTEGER NOT NULL.', 'CREATE TABLE oceny_lab (id INTEGER PRIMARY KEY, osoba_id INTEGER NOT NULL, ocena INTEGER NOT NULL, FOREIGN KEY (osoba_id) REFERENCES osoby(id));', { tables: [tableSchema('oceny_lab', columns(column('id', 'INTEGER', { primaryKey: true, notNull: true }), column('osoba_id', 'INTEGER', { notNull: true }), column('ocena', 'INTEGER', { notNull: true })), { exactColumns: true, foreignKeys: [{ from: 'osoba_id', table: 'osoby', to: 'id' }] })] }),
+    ],
+  },
+];

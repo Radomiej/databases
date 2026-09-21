@@ -1,5 +1,6 @@
 const READ_ONLY_STATEMENTS = new Set(['SELECT', 'SHOW', 'DESCRIBE', 'EXPLAIN']);
 const MUTATION_STATEMENTS = new Set(['INSERT', 'UPDATE', 'DELETE', 'REPLACE', 'CREATE', 'ALTER', 'DROP', 'TRUNCATE', 'RENAME', 'GRANT', 'REVOKE', 'CALL', 'SET', 'USE']);
+const DATA_MUTATION_STATEMENTS = new Set(['INSERT', 'UPDATE', 'DELETE', 'REPLACE']);
 
 function stripSqlComments(sql = '') {
   return String(sql)
@@ -17,6 +18,17 @@ export function classifyMysqlStatement(sql) {
 function hasMultipleStatements(sql) {
   const withoutTrailingSemicolon = String(sql).trim().replace(/;\s*$/u, '');
   return withoutTrailingSemicolon.includes(';');
+}
+
+export function isMysqlSchemaMutation(sql) {
+  if (!String(sql ?? '').trim() || hasMultipleStatements(sql)) return false;
+  const cleaned = stripSqlComments(sql);
+  return /^(?:CREATE\s+TABLE|ALTER\s+TABLE)\b/iu.test(cleaned);
+}
+
+export function isMysqlDataMutation(sql) {
+  if (!String(sql ?? '').trim() || hasMultipleStatements(sql)) return false;
+  return DATA_MUTATION_STATEMENTS.has(classifyMysqlStatement(sql));
 }
 
 export function isMysqlReadOnly(sql) {
@@ -42,6 +54,7 @@ export function createMysqlConfig(input = {}, env = process.env) {
     user: String(hasOwn('user') ? input.user : env.MYSQL_USER ?? 'root').trim(),
     password: String(hasOwn('password') ? input.password : env.MYSQL_PASSWORD ?? ''),
     allowMutations: String(env.MYSQL_ALLOW_MUTATIONS).toLowerCase() === 'true' && input.allowMutations === true,
+    allowSchemaMutations: String(env.MYSQL_ALLOW_SCHEMA_MUTATIONS).toLowerCase() === 'true' && input.allowSchemaMutations === true,
   };
 }
 

@@ -12,9 +12,10 @@ import Sidebar from './components/Sidebar.jsx';
 import SqlEditor from './components/SqlEditor.jsx';
 import TableBuilderModal from './components/TableBuilderModal.jsx';
 import { DATASETS, getDataset } from './data/datasets.js';
-import { LESSONS, getLesson } from './data/lessons.js';
+import { COURSE_LESSONS, getLesson } from './data/lessons.js';
 import { getTaskProgressKey } from './data/lessonTasks.js';
 import { validateQueryResult } from './services/queryValidation.js';
+import { validateSchema } from './services/schemaValidation.js';
 import { useSqliteDatabase } from './hooks/useSqliteDatabase.js';
 import { useLocalStorage } from './hooks/useLocalStorage.js';
 import { describeTable as describeMysqlTable, getConnectorHealth, listRelations, listTables, runQuery as runMysqlQuery, testConnection } from './services/mysqlApi.js';
@@ -43,8 +44,9 @@ function App() {
   const [mysqlStatus, setMysqlStatus] = useState({ state: 'idle', message: '', serverVersion: '' });
   const [mysqlSchema, setMysqlSchema] = useState([]);
   const [mysqlRelationships, setMysqlRelationships] = useState([]);
-  const [mysqlCapabilities, setMysqlCapabilities] = useState({ mutationsAvailable: false });
+  const [mysqlCapabilities, setMysqlCapabilities] = useState({ mutationsAvailable: false, schemaMutationsAvailable: false });
   const [allowMutations, setAllowMutations] = useState(false);
+  const [allowSchemaMutations, setAllowSchemaMutations] = useState(false);
   const [isRelationEditorOpen, setIsRelationEditorOpen] = useState(false);
   const [tablePreview, setTablePreview] = useState({ table: null, result: null, loading: false });
   const previewRequestRef = useRef(0);
@@ -60,12 +62,15 @@ function App() {
 
   useEffect(() => {
     if (mode !== 'mysql') {
-      setMysqlCapabilities({ mutationsAvailable: false });
+      setMysqlCapabilities({ mutationsAvailable: false, schemaMutationsAvailable: false });
       return undefined;
     }
     let isCurrent = true;
     getConnectorHealth().then((response) => {
-      if (isCurrent) setMysqlCapabilities({ mutationsAvailable: response.ok === true && response.allowMutationsAvailable === true });
+      if (isCurrent) setMysqlCapabilities({
+        mutationsAvailable: response.ok === true && response.allowMutationsAvailable === true,
+        schemaMutationsAvailable: response.ok === true && response.allowSchemaMutationsAvailable === true,
+      });
     });
     return () => { isCurrent = false; };
   }, [mode]);
@@ -81,7 +86,7 @@ function App() {
 
   const handleDatasetChange = (nextDatasetId) => {
     const nextDataset = getDataset(nextDatasetId);
-    const firstLesson = LESSONS.find((item) => item.datasetId === nextDataset.id) ?? LESSONS[0];
+    const firstLesson = COURSE_LESSONS.find((item) => item.datasetId === nextDataset.id) ?? COURSE_LESSONS[0];
     setDatasetId(nextDataset.id);
     setLessonId(firstLesson.id);
     setSidebarOpen(false);
@@ -128,6 +133,32 @@ function App() {
     if (shouldRemember) setSavedConnection({ ...connection, password: '' });
   };
 
+  const refreshMysqlSchema = async () => {
+    const [tablesResponse, relationsResponse] = await Promise.all([listTables(connection), listRelations(connection)]);
+    const actualRelationships = relationsResponse.ok && Array.isArray(relationsResponse.relationships) ? relationsResponse.relationships : [];
+    setMysqlRelationships(actualRelationships);
+    if (!tablesResponse.ok) {
+      setMysqlSchema([]);
+      return { schema: [], tablesResponse, relationsResponse };
+    }
+
+    const tableDetails = await Promise.all(tablesResponse.tableNames.map(async (tableName) => {
+      const detail = await describeMysqlTable(connection, tableName);
+      const foreignKeys = actualRelationships.flatMap((relationship) => {
+        const [fromTable, fromColumn] = relationship.from.split('.');
+        const [toTable, toColumn] = relationship.to.split('.');
+        return fromTable === tableName ? [{ table: toTable, from: fromColumn, to: toColumn }] : [];
+      });
+      return {
+        name: tableName,
+        columns: detail.ok ? detail.rows.map(([field, type, nullable, key, defaultValue]) => ({ name: field, type, notNull: nullable === 'NO', primaryKey: key === 'PRI', defaultValue })) : [],
+        foreignKeys,
+      };
+    }));
+    setMysqlSchema(tableDetails);
+    return { schema: tableDetails, tablesResponse, relationsResponse };
+  };
+
   const handleTestConnection = async () => {
     setMysqlStatus({ state: 'loading', message: 'Łączę się z serwerem...', serverVersion: '' });
     const response = await testConnection(connection);
@@ -138,27 +169,7 @@ function App() {
       setResult(response);
       return;
     }
-    const [tablesResponse, relationsResponse] = await Promise.all([listTables(connection), listRelations(connection)]);
-    const actualRelationships = relationsResponse.ok && Array.isArray(relationsResponse.relationships) ? relationsResponse.relationships : [];
-    setMysqlRelationships(actualRelationships);
-    if (tablesResponse.ok) {
-      const tableDetails = await Promise.all(tablesResponse.tableNames.map(async (tableName) => {
-        const detail = await describeMysqlTable(connection, tableName);
-        const foreignKeys = actualRelationships.flatMap((relationship) => {
-          const [fromTable, fromColumn] = relationship.from.split('.');
-          const [toTable, toColumn] = relationship.to.split('.');
-          return fromTable === tableName ? [{ table: toTable, from: fromColumn, to: toColumn }] : [];
-        });
-        return {
-          name: tableName,
-          columns: detail.ok ? detail.rows.map(([field, type, nullable, key]) => ({ name: field, type, notNull: nullable === 'NO', primaryKey: key === 'PRI' })) : [],
-          foreignKeys,
-        };
-      }));
-      setMysqlSchema(tableDetails);
-    } else {
-      setMysqlSchema([]);
-    }
+    const { tablesResponse, relationsResponse } = await refreshMysqlSchema();
     setMysqlStatus({ state: 'connected', message: 'Połączenie działa poprawnie.', serverVersion: response.serverVersion });
     if (!tablesResponse.ok) setFeedback({ type: 'warning', title: 'Połączono, ale nie pobrano schematu', message: tablesResponse.message, details: tablesResponse.hint });
     else if (!relationsResponse.ok) setFeedback({ type: 'warning', title: 'Pobrano tabele bez relacji', message: relationsResponse.message, details: relationsResponse.hint });
@@ -188,7 +199,7 @@ function App() {
 
     try {
       const sql = buildTablePreviewSql(tableName, mode);
-      const previewResult = mode === 'sqlite' ? sqlite.execute(sql) : await runMysqlQuery(connection, sql, false);
+      const previewResult = mode === 'sqlite' ? sqlite.execute(sql) : await runMysqlQuery(connection, sql, false, false);
       if (previewRequestRef.current === requestId) setTablePreview({ table, result: previewResult, loading: false });
     } catch (error) {
       if (previewRequestRef.current === requestId) {
@@ -251,17 +262,20 @@ function App() {
 
   const executeCurrentQuery = async () => {
     if (mode !== 'sqlite') {
-      const queryResult = await runMysqlQuery(connection, sqlText, allowMutations);
+      const queryResult = await runMysqlQuery(connection, sqlText, allowMutations, allowSchemaMutations);
+      let schema;
+      if (queryResult.ok && queryResult.statementType === 'DDL') schema = (await refreshMysqlSchema()).schema;
       setResult(queryResult);
       setFeedback(null);
       saveHistory(queryResult);
-      return queryResult;
+      return { ...queryResult, schema };
     }
     const queryResult = sqlite.execute(sqlText);
+    const schema = sqlite.getSchema?.() ?? sqlite.schema;
     setResult(queryResult);
     setFeedback(null);
     saveHistory(queryResult);
-    return queryResult;
+    return { ...queryResult, schema };
   };
 
   const handleRun = () => {
@@ -270,6 +284,23 @@ function App() {
 
   const handleCheck = async () => {
     const queryResult = await executeCurrentQuery();
+    if (activeTask?.expectedSchema) {
+      if (!queryResult.ok) {
+        setFeedback({ type: 'warning', title: 'Nie udało się wykonać zadania', message: queryResult.message, details: queryResult.hint });
+        return;
+      }
+      const validation = validateSchema(queryResult.schema ?? (mode === 'sqlite' ? sqlite.schema : mysqlSchema), activeTask.expectedSchema);
+      if (validation.passed) {
+        const taskKey = getTaskProgressKey(lesson.id, activeTask.id);
+        const nextTaskProgress = { ...taskProgress, [taskKey]: true };
+        setTaskProgress(nextTaskProgress);
+        if (lessonTasks.every((task) => nextTaskProgress[getTaskProgressKey(lesson.id, task.id)])) setProgress((current) => ({ ...current, [lesson.id]: true }));
+        setFeedback({ type: 'success', title: 'Zadanie zaliczone', message: activeTask.successMessage ?? lesson.successMessage, details: validation.details });
+      } else {
+        setFeedback({ type: 'warning', title: 'Jeszcze nie tym razem', message: validation.message, details: validation.details });
+      }
+      return;
+    }
     if (mode !== 'sqlite') {
       setFeedback({ type: 'warning', title: 'Ocena jest dostępna w trybie SQLite', message: 'Tryb MySQL służy do wykonywania zapytań na Twojej bazie.' });
       return;
@@ -293,7 +324,7 @@ function App() {
       datasets={DATASETS}
       selectedDatasetId={datasetId}
       onDatasetChange={handleDatasetChange}
-      lessons={LESSONS}
+      lessons={COURSE_LESSONS}
       selectedLessonId={lessonId}
       onLessonChange={handleLessonChange}
       progress={progress}
@@ -311,7 +342,7 @@ function App() {
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
         <div className="toolbar-engine"><span className="toolbar-engine-dot" />{mode === 'sqlite' ? 'SQLite lokalnie' : 'MySQL connector'}</div>
       </div>
-      {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={mysqlCapabilities.mutationsAvailable} onAllowMutationsChange={setAllowMutations} />}
+      {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={mysqlCapabilities.mutationsAvailable} onAllowMutationsChange={setAllowMutations} allowSchemaMutations={allowSchemaMutations} schemaMutationsAvailable={mysqlCapabilities.schemaMutationsAvailable} onAllowSchemaMutationsChange={setAllowSchemaMutations} />}
       <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={mode === 'sqlite' ? sqlite.status : mysqlStatus.state} mode={mode} activeTaskId={activeTask?.id} taskProgress={taskProgress} onTaskChange={handleTaskChange} />
       <div className="syntax-strip">
         <div className="syntax-strip-label"><i className="bi bi-braces" aria-hidden="true" /> Składnia</div>

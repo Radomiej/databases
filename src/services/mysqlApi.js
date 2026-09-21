@@ -41,8 +41,8 @@ export function testConnection(connection) {
   return postJson('/api/mysql/test-connection', { connection });
 }
 
-export function runQuery(connection, sql, allowMutations = false) {
-  return postJson('/api/mysql/query', { connection, sql, allowMutations });
+export function runQuery(connection, sql, allowMutations = false, allowSchemaMutations = false) {
+  return postJson('/api/mysql/query', { connection, sql, allowMutations, allowSchemaMutations });
 }
 
 export function listTables(connection) {
