@@ -20,7 +20,7 @@ function Sidebar({
         <div className="brand-mark" aria-hidden="true"><i className="bi bi-database-fill" /></div>
         <div>
           <div className="brand-name">SQL Learning Lab</div>
-          <div className="brand-subtitle">INF.03 — praktyka czynna mistrza</div>
+          <div className="brand-subtitle">INF.03 — ćwiczenia SQL</div>
         </div>
       </div>
 

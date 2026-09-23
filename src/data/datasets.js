@@ -426,7 +426,8 @@ export const DATASETS = [
         (2, 'Piotr', 'Kowalski', 'piotr@example.com'),
         (3, 'Maria', 'Wójcik', 'maria@example.com'),
         (4, 'Tomasz', 'Zieliński', 'tomasz@example.com'),
-        (5, 'Julia', 'Kamińska', 'julia@example.com');
+        (5, 'Julia', 'Kamińska', 'julia@example.com'),
+        (6, 'Paweł', 'Wiśniewski', 'pawel@example.com');
       INSERT INTO bilety (id, seans_id, klient_id, miejsce, status) VALUES
         (1, 1, 1, 'A10', 'opłacony'),
         (2, 1, 2, 'A11', 'opłacony'),

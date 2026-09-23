@@ -52,7 +52,7 @@ function DataPreviewModal({
             <div>
               <div className="data-preview-kicker">{mode === 'mysql' ? 'MYSQL CONNECTOR' : 'SQLITE — LOKALNIE'} · {databaseLabel}</div>
               <h2 id="data-preview-title">Podgląd danych: {table.name}</h2>
-              <p>Odczyt pierwszych 50 rekordów z aktualnej tabeli.</p>
+              <p>Podgląd maksymalnie 50 rekordów z aktualnej tabeli.</p>
             </div>
           </div>
           <button type="button" className="data-preview-close" aria-label="Zamknij podgląd" onClick={onClose}><i className="bi bi-x-lg" aria-hidden="true" /></button>

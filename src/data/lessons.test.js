@@ -103,6 +103,27 @@ describe('lesson solutions', () => {
       .toContain('przedmiotu „Bazy danych”');
   });
 
+  it('keeps task wording, sort direction, and filter conditions consistent', () => {
+    const lessonTasks = Object.fromEntries(QUERY_LESSONS.map((lesson) => [
+      lesson.id,
+      Object.fromEntries(lesson.tasks.map((task) => [task.id, task])),
+    ]));
+
+    expect(lessonTasks['select-limit']['authors-list'].prompt).not.toContain('pierwszych');
+    expect(lessonTasks['select-limit']['loans-list'].prompt).not.toContain('pierwszych');
+    expect(lessonTasks['order-by']['oldest-books'].solution).toMatch(/ORDER BY rok_wydania ASC, id ASC/i);
+    expect(lessonTasks['order-by']['recent-loans'].solution).toMatch(/ORDER BY data_wypozyczenia DESC/i);
+    expect(lessonTasks['multi-join']['top-grades'].solution).toContain('WHERE o.ocena = 5');
+    expect(lessonTasks.subqueries['subqueries-guided'].solution)
+      .toContain('WHERE ocena = 5');
+    expect(lessonTasks.subqueries['high-averages'].solution)
+      .toContain('ROUND(s.srednia, 2) AS srednia');
+    expect(lessonTasks.subqueries['high-averages'].solution)
+      .toContain('WHERE s.srednia >= 4.5');
+    expect(lessonTasks['left-join']['tickets-by-customer'].expected.rows)
+      .toContainEqual(['Paweł', 'Wiśniewski', 0]);
+  });
+
   it.each(QUERY_LESSONS.flatMap((lesson) => lesson.tasks.map((task) => ({ lesson, task }))))('solution for task $task.id executes', async ({ lesson, task }) => {
     const { db, destroy } = await createSqliteDatabase(DATASET_MAP[lesson.datasetId], initSqlJsForTest, () => wasmPath);
     const result = executeSqliteQuery(db, task.solution);
