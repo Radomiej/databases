@@ -10,6 +10,8 @@ function Sidebar({
   selectedLessonId,
   onLessonChange,
   progress,
+  onOpenSettings,
+  onOpenHelp,
 }) {
   const selectedDataset = datasets.find((dataset) => dataset.id === selectedDatasetId);
   const completedCount = Object.values(progress ?? {}).filter(Boolean).length;
@@ -87,8 +89,8 @@ function Sidebar({
           <span><strong>{selectedDataset?.name ?? 'Baza'}</strong><br />gotowa do ćwiczeń</span>
         </div>
         <div className="sidebar-footer-links">
-          <button type="button" className="sidebar-utility"><i className="bi bi-sliders2" aria-hidden="true" /> Ustawienia</button>
-          <button type="button" className="sidebar-utility"><i className="bi bi-question-circle" aria-hidden="true" /> Pomoc</button>
+          <button type="button" className="sidebar-utility" onClick={onOpenSettings}><i className="bi bi-sliders2" aria-hidden="true" /> Ustawienia</button>
+          <button type="button" className="sidebar-utility" onClick={onOpenHelp}><i className="bi bi-question-circle" aria-hidden="true" /> Pomoc</button>
         </div>
       </div>
     </div>

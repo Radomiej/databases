@@ -11,6 +11,14 @@ W panelu **Schemat bazy** kliknij przycisk `⋮` przy tabeli i wybierz **Podglą
 
 phpMyAdmin nie jest endpointem aplikacji. Możesz używać go do importu skryptu i sprawdzania danych, ale connector łączy się bezpośrednio z serwerem MySQL.
 
+## Pomoc, szkice i ustawienia lokalne
+
+Przycisk **Pomoc** w menu bocznym opisuje kolejność pracy: wybór trybu i bazy, zadanie pokazowe, zadania samodzielne oraz uruchamianie i sprawdzanie zapytań. Szkic SQL jest zapisywany osobno dla każdej lekcji i każdego zadania, również po odświeżeniu strony.
+
+Historia zapisuje pełny tekst uruchomionego lub sprawdzonego zapytania wraz z bazą, trybem, lekcją, zadaniem, wynikiem oraz czasem względnym i dokładnym. Jest przechowywana w IndexedDB; starsze wpisy z localStorage są migrowane przy pierwszym otwarciu.
+
+W **Ustawieniach** możesz zresetować aktywny zestaw SQLite do danych startowych (bez kasowania postępu, szkiców i historii) albo przywrócić ustawienia fabryczne aplikacji. Reset fabryczny usuwa lokalny postęp, szkice, historię, własne tabele i zapisane ustawienia połączenia. Żaden reset w aplikacji nie wykonuje poleceń ani nie modyfikuje danych MySQL.
+
 ## Wymagania
 
 - Node.js 18 lub nowszy,
