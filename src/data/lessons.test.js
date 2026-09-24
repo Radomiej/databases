@@ -29,8 +29,8 @@ describe('lesson solutions', () => {
   });
 
   it('provides three actionable tasks for every lesson', () => {
-    expect(LESSONS).toHaveLength(17);
-    expect(QUERY_LESSONS).toHaveLength(13);
+    expect(LESSONS).toHaveLength(18);
+    expect(QUERY_LESSONS).toHaveLength(14);
     LESSONS.forEach((lesson) => {
       expect(lesson.tasks).toHaveLength(3);
       expect(new Set(lesson.tasks.map((task) => task.id)).size).toBe(3);
@@ -43,7 +43,7 @@ describe('lesson solutions', () => {
   });
 
   it('exposes schema lessons as the continuation of the course', () => {
-    expect(COURSE_LESSONS).toHaveLength(17);
+    expect(COURSE_LESSONS).toHaveLength(18);
     expect(COURSE_LESSONS.slice(-4).map((lesson) => lesson.datasetId)).toEqual([
       'structure-lab',
       'structure-lab',
@@ -64,6 +64,15 @@ describe('lesson solutions', () => {
   it('offers runnable walkthroughs for both HAVING lessons', () => {
     expect(getLesson('having').walkthrough?.steps).toHaveLength(3);
     expect(getLesson('where-having').walkthrough?.steps).toHaveLength(3);
+  });
+
+  it('teaches one-to-many INNER JOIN without silently deduplicating rows', () => {
+    expect(LESSONS.slice(8, 11).map((lesson) => lesson.id)).toEqual(['inner-join', 'inner-join-matches', 'left-join']);
+    expect(getLesson('inner-join').walkthrough.steps).toHaveLength(3);
+    expect(getLesson('inner-join-matches').tasks).toHaveLength(3);
+    expect(getLesson('inner-join-matches').walkthrough.steps.at(-1).expected.rows)
+      .toEqual([['Anna', 'Nowak', 1], ['Anna', 'Nowak', 3]]);
+    expect(getLesson('inner-join-matches').walkthrough.steps.at(-1).expected.rows.some((row) => row.includes('Marek'))).toBe(false);
   });
 
   it.each(QUERY_LESSONS.filter((lesson) => lesson.walkthrough))('walkthrough for $id matches its seed', async (lesson) => {

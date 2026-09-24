@@ -8,6 +8,7 @@ export const LESSON_TOPIC_PLAN = [
   { lessonId: 'having', introduces: ['having'] },
   { lessonId: 'where-having', introduces: [] },
   { lessonId: 'inner-join', introduces: ['inner-join'] },
+  { lessonId: 'inner-join-matches', introduces: [] },
   { lessonId: 'left-join', introduces: ['left-join'] },
   { lessonId: 'multi-join', introduces: ['multi-join'] },
   { lessonId: 'subqueries', introduces: ['subquery', 'with'] },
