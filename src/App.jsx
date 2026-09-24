@@ -4,7 +4,6 @@ import ConnectionPanel from './components/ConnectionPanel.jsx';
 import DataPreviewModal from './components/DataPreviewModal.jsx';
 import FeedbackAlert from './components/FeedbackAlert.jsx';
 import HelpModal from './components/HelpModal.jsx';
-import HintPanel from './components/HintPanel.jsx';
 import LessonPanel from './components/LessonPanel.jsx';
 import RelationEditorModal from './components/RelationEditorModal.jsx';
 import ResultsPanel from './components/ResultsPanel.jsx';
@@ -45,7 +44,6 @@ function App() {
   const [connection, setConnection] = useState(() => ({ ...DEFAULT_CONNECTION, ...(rememberConnection ? savedConnection : {}), password: '' }));
   const [result, setResult] = useState(null);
   const [feedback, setFeedback] = useState(null);
-  const [isHintOpen, setIsHintOpen] = useState(false);
   const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
   const [mysqlStatus, setMysqlStatus] = useState({ state: 'idle', message: '', serverVersion: '' });
   const [mysqlSchema, setMysqlSchema] = useState([]);
@@ -89,7 +87,6 @@ function App() {
     setSqlText(firstTask ? getTaskSqlDraft(taskSqlByKey, lesson.id, firstTask, firstTask) : lesson.solution);
     setResult(null);
     setFeedback(null);
-    setIsHintOpen(false);
   }, [lessonId, lesson.solution, lessonTasks]);
 
   const handleDatasetChange = (nextDatasetId) => {
@@ -114,7 +111,6 @@ function App() {
     setSqlText(getTaskSqlDraft(taskSqlByKey, lesson.id, nextTask, lessonTasks[0]));
     setResult(null);
     setFeedback(null);
-    setIsHintOpen(false);
   };
 
   const handleSqlChange = (nextSql) => {
@@ -303,7 +299,6 @@ function App() {
     setIsTableBuilderOpen(false);
     setIsHelpOpen(false);
     setSidebarOpen(false);
-    setIsHintOpen(false);
     setResult(null);
     setFeedback(null);
     handleCloseTablePreview();
@@ -430,9 +425,9 @@ function App() {
         onCheck={handleCheck}
         onReset={() => { handleSqlChange(''); setResult(null); setFeedback(null); }}
         onShowSolution={() => handleSqlChange(activeTask?.solution ?? lesson.solution)}
+        showSolution={activeTask?.id === lessonTasks[0]?.id}
         disabled={mode === 'sqlite' && sqlite.status !== 'ready'}
       />
-      <HintPanel hint={activeTask?.hint ?? lesson.hint} open={isHintOpen} onToggle={() => setIsHintOpen((open) => !open)} />
       <FeedbackAlert feedback={feedback} />
       <ResultsPanel result={result} history={history} onHistorySelect={(entry) => { handleSqlChange(entry.sql); setResult(null); setFeedback(null); }} />
       <TableBuilderModal open={isTableBuilderOpen} onClose={() => setIsTableBuilderOpen(false)} onCreate={handleCreateTable} existingNames={sqlite.schema.map((tableItem) => tableItem.name)} />

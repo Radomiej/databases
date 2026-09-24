@@ -17,7 +17,7 @@ const mysqlMock = vi.hoisted(() => ({
 beforeEach(() => {
   localStorage.clear();
   sqliteMock.reset.mockClear();
-  sqliteMock.execute.mockClear();
+  sqliteMock.execute.mockReset().mockReturnValue({ ok: true, rows: [], columns: [], rowCount: 0 });
   Object.values(mysqlMock).forEach((method) => method.mockClear());
   Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: createFakeIndexedDb() });
 });
@@ -65,6 +65,27 @@ test('keeps a separate SQL draft for each task across task changes and reloads',
   await waitFor(() => expect(reloadedEditor.value).toBe('SELECT tytul FROM ksiazki WHERE id = 1;'));
   fireEvent.click(screen.getByRole('button', { name: /Autorzy z limitem/ }));
   expect(reloadedEditor.value).toBe('SELECT imie FROM autorzy LIMIT 2;');
+});
+
+test('checks independent SQL without exposing its solution, including after remount', async () => {
+  sqliteMock.execute.mockReturnValue({ ok: true, columns: ['imie', 'nazwisko'], rows: [['Adam', 'Mickiewicz'], ['Bolesław', 'Prus'], ['Henryk', 'Sienkiewicz']], rowCount: 3 });
+  const firstMount = render(<App />);
+  expect(screen.getByRole('button', { name: 'Rozwiązanie' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /Autorzy z limitem/ }));
+  expect(screen.queryByRole('button', { name: 'Rozwiązanie' })).not.toBeInTheDocument();
+  const editor = screen.getByRole('textbox', { name: 'Zapytanie SQL' });
+  fireEvent.change(editor, { target: { value: 'SELECT imie, nazwisko FROM autorzy LIMIT 3;' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Sprawdź' }));
+  await waitFor(() => expect(screen.getByText('1/3 zadań zaliczonych w tej sesji')).toBeInTheDocument());
+  fireEvent.click(screen.getAllByRole('button', { name: /Zadanie pokazowe/ })[0]);
+  expect(screen.getByRole('button', { name: 'Rozwiązanie' })).toBeInTheDocument();
+  firstMount.unmount();
+
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /Autorzy z limitem/ }));
+  expect(screen.getByRole('textbox', { name: 'Zapytanie SQL' })).toHaveValue('SELECT imie, nazwisko FROM autorzy LIMIT 3;');
+  expect(screen.queryByRole('button', { name: 'Rozwiązanie' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Sprawdź' })).toBeInTheDocument();
 });
 
 test('opens the settings and help panels from the sidebar', () => {

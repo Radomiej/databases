@@ -1,4 +1,4 @@
-function SqlEditor({ value, onChange, onRun, onCheck, onReset, onShowSolution, disabled = false }) {
+function SqlEditor({ value, onChange, onRun, onCheck, onReset, onShowSolution, showSolution = true, disabled = false }) {
   const handleKeyDown = (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       event.preventDefault();
@@ -60,10 +60,12 @@ function SqlEditor({ value, onChange, onRun, onCheck, onReset, onShowSolution, d
             <i className="bi bi-arrow-counterclockwise" aria-hidden="true" />
             Wyczyść
           </button>
-          <button type="button" className="btn btn-editor-secondary" onClick={onShowSolution} disabled={disabled}>
-            <i className="bi bi-file-earmark-code" aria-hidden="true" />
-            Rozwiązanie
-          </button>
+          {showSolution && (
+            <button type="button" className="btn btn-editor-secondary" onClick={onShowSolution} disabled={disabled}>
+              <i className="bi bi-file-earmark-code" aria-hidden="true" />
+              Rozwiązanie
+            </button>
+          )}
         </div>
       </div>
     </section>

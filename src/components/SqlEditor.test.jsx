@@ -21,3 +21,12 @@ test('emits edited SQL and run action', () => {
   expect(onChange).toHaveBeenCalledWith('SELECT 2');
   expect(onRun).toHaveBeenCalledTimes(1);
 });
+
+test('hides only the solution control for independent tasks', () => {
+  const props = { value: '', onChange: vi.fn(), onRun: vi.fn(), onCheck: vi.fn(), onReset: vi.fn(), onShowSolution: vi.fn() };
+  const { rerender } = render(<SqlEditor {...props} showSolution={false} />);
+  expect(screen.queryByRole('button', { name: 'Rozwiązanie' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Sprawdź' })).toBeInTheDocument();
+  rerender(<SqlEditor {...props} showSolution />);
+  expect(screen.getByRole('button', { name: 'Rozwiązanie' })).toBeInTheDocument();
+});
