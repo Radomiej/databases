@@ -29,8 +29,8 @@ describe('lesson solutions', () => {
   });
 
   it('provides three actionable tasks for every lesson', () => {
-    expect(LESSONS).toHaveLength(18);
-    expect(QUERY_LESSONS).toHaveLength(14);
+    expect(LESSONS).toHaveLength(19);
+    expect(QUERY_LESSONS).toHaveLength(15);
     LESSONS.forEach((lesson) => {
       expect(lesson.tasks).toHaveLength(3);
       expect(new Set(lesson.tasks.map((task) => task.id)).size).toBe(3);
@@ -43,7 +43,7 @@ describe('lesson solutions', () => {
   });
 
   it('exposes schema lessons as the continuation of the course', () => {
-    expect(COURSE_LESSONS).toHaveLength(18);
+    expect(COURSE_LESSONS).toHaveLength(19);
     expect(COURSE_LESSONS.slice(-4).map((lesson) => lesson.datasetId)).toEqual([
       'structure-lab',
       'structure-lab',
@@ -73,6 +73,14 @@ describe('lesson solutions', () => {
     expect(getLesson('inner-join-matches').walkthrough.steps.at(-1).expected.rows)
       .toEqual([['Anna', 'Nowak', 1], ['Anna', 'Nowak', 3]]);
     expect(getLesson('inner-join-matches').walkthrough.steps.at(-1).expected.rows.some((row) => row.includes('Marek'))).toBe(false);
+  });
+
+  it('compares INNER and LEFT on the same films and includes the unmatched film', () => {
+    expect(LESSONS.slice(8, 12).map((lesson) => lesson.id)).toEqual(['inner-join', 'inner-join-matches', 'left-join', 'join-comparison']);
+    expect(getLesson('left-join').walkthrough.steps).toHaveLength(3);
+    expect(getLesson('join-comparison').tasks).toHaveLength(3);
+    expect(getLesson('join-comparison').walkthrough.steps[0].expected.rows).toEqual([['Cicha rzeka', 1], ['Cicha rzeka', 5]]);
+    expect(getLesson('join-comparison').walkthrough.steps[1].expected.rows).toEqual([['Cicha rzeka', 1], ['Cicha rzeka', 5], ['W drodze', null]]);
   });
 
   it.each(QUERY_LESSONS.filter((lesson) => lesson.walkthrough))('walkthrough for $id matches its seed', async (lesson) => {
