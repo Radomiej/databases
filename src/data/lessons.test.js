@@ -61,6 +61,25 @@ describe('lesson solutions', () => {
     expect(getLesson('where-having').tasks).toHaveLength(3);
   });
 
+  it('offers runnable walkthroughs for both HAVING lessons', () => {
+    expect(getLesson('having').walkthrough?.steps).toHaveLength(3);
+    expect(getLesson('where-having').walkthrough?.steps).toHaveLength(3);
+  });
+
+  it.each(QUERY_LESSONS.filter((lesson) => lesson.walkthrough))('walkthrough for $id matches its seed', async (lesson) => {
+    const { db, destroy } = await createSqliteDatabase(DATASET_MAP[lesson.datasetId], initSqlJsForTest, () => wasmPath);
+    try {
+      for (const step of lesson.walkthrough.steps) {
+        const result = executeSqliteQuery(db, step.sql);
+        expect(result.ok, `${lesson.id}/${step.title}: ${result.message}`).toBe(true);
+        expect(result.columns).toEqual(step.expected.columns);
+        expect(result.rows).toEqual(step.expected.rows);
+      }
+    } finally {
+      destroy();
+    }
+  });
+
   it('keeps every task within the material introduced so far', () => {
     const knownTopics = new Set();
 
@@ -82,6 +101,12 @@ describe('lesson solutions', () => {
       lesson.tasks.forEach((task) => {
         const unsupportedTopics = [...getSqlTopics(task.solution)].filter((topic) => !allowedTopics.has(topic));
         expect(unsupportedTopics, `${lesson.id}/${task.id} uses future SQL topics`).toEqual([]);
+        const unsupportedHintTopics = [...getSqlTopics(task.hint ?? '')].filter((topic) => !allowedTopics.has(topic));
+        expect(unsupportedHintTopics, `${lesson.id}/${task.id} hints at future SQL topics`).toEqual([]);
+      });
+      lesson.walkthrough?.steps.forEach((step) => {
+        const unsupportedTopics = [...getSqlTopics(step.sql)].filter((topic) => !allowedTopics.has(topic));
+        expect(unsupportedTopics, `${lesson.id}/${step.title} shows future SQL topics`).toEqual([]);
       });
 
       plan.introduces.forEach((topic) => knownTopics.add(topic));
