@@ -1,11 +1,12 @@
 # Plan nauki SQL pod INF.03
 
-Pracuj w kolejności. Dla każdej lekcji najpierw przeczytaj teorię, potem przepisz przykład własnymi słowami, wykonaj zadanie bez rozwiązania, a na końcu użyj `Sprawdź`.
+Pracuj w kolejności. Dla każdej lekcji najpierw przeczytaj teorię i przykład krok po kroku, jeśli jest dostępny. Zadanie pokazowe pozwala zobaczyć rozwiązanie; kolejne rozwiąż samodzielnie i użyj `Sprawdź`.
 
 ## 1. SELECT i LIMIT
 
 Cel: wybierać konkretne kolumny i ograniczać wynik.  
-Ćwicz: `SELECT`, `FROM`, `LIMIT`, alias kolumny przez `AS`.  
+Ćwicz: `SELECT`, `FROM`, `LIMIT` na różnych tabelach.
+
 Baza: `biblioteka`.
 
 ## 2. WHERE i warunki
@@ -38,61 +39,91 @@ Cel: liczyć lub sumować osobno dla każdej kategorii.
 Ćwicz: kolumny grupujące, agregacja dla grup, sortowanie raportu.  
 Baza: `sklep`.
 
-## 7. HAVING
+## 7. HAVING krok po kroku
 
-Cel: filtrować grupy po agregacji.  
-Zapamiętaj: `WHERE` działa na wierszach, `HAVING` działa na grupach.  
+Cel: zobaczyć, jak z wierszy powstają grupy i które z nich zostawia `HAVING`.
+
+Ćwicz: `GROUP BY`, `COUNT(*)`, `HAVING COUNT(*) > 1`; rozróżniaj wiersz od grupy.
+
 Baza: `sklep`.
 
-## 8. INNER JOIN
+## 8. WHERE i HAVING razem
 
-Cel: łączyć tylko rekordy mające dopasowanie w obu tabelach.  
-Ćwicz: `JOIN ... ON`, aliasy tabel i łączenie trzech tabel.  
+Cel: oddzielić wybór pojedynczych zamówień od wyboru policzonych grup.
+
+Ćwicz: `WHERE` przed `GROUP BY` i `HAVING` po grupowaniu, na tej samej tabeli.
+
 Baza: `sklep`.
 
-## 9. LEFT JOIN
+## 9. INNER JOIN — dopasowanie po kluczach
 
-Cel: zachować wszystkie rekordy z lewej tabeli.  
-Ćwicz: wyszukiwanie rekordów bez dopasowania przez `IS NULL`.  
+Cel: połączyć dwa pasujące rekordy przez kolumnę klucza obcego i głównego.
+
+Ćwicz: `INNER JOIN ... ON` na tabelach `zamowienia` i `klienci`; odczytuj identyfikatory przed połączeniem.
+
+Baza: `sklep`.
+
+## 10. INNER JOIN — wiele dopasowań
+
+Cel: zrozumieć, dlaczego jeden klient może dać kilka wierszy wyniku, a inny żaden.
+
+Ćwicz: jeden klient, dwa zamówienia, dwa wiersze wyniku; brak zamówienia oznacza brak wiersza.
+
+Baza: `sklep`.
+
+## 11. LEFT JOIN — rekordy bez pary
+
+Cel: zachować film z lewej tabeli nawet wtedy, gdy nie ma seansu.
+
+Ćwicz: `LEFT JOIN`, `NULL` po stronie seansu i wyszukiwanie przez `IS NULL`.
+
 Baza: `kino`.
 
-## 10. Wielokrotne JOIN i aliasy
+## 12. INNER JOIN kontra LEFT JOIN
+
+Cel: porównać oba typy połączeń na tych samych filmach i wybrać właściwy do pytania.
+
+Ćwicz: zamień tylko `INNER` na `LEFT` i zauważ dodatkowy wiersz z `NULL`.
+
+Baza: `kino`.
+
+## 13. Wielokrotne JOIN i aliasy
 
 Cel: budować czytelny raport z czterech tabel.  
 Ćwicz: krótkie aliasy, pełne warunki `ON`, wybór kolumn z wielu źródeł.  
 Baza: `szkola`.
 
-## 11. Podzapytania i WITH
+## 14. Podzapytania i WITH
 
 Cel: używać wyniku jednego zapytania w innym.  
 Ćwicz: podzapytanie skalarne, `IN (SELECT ...)`, `MAX`, podstawy `WITH`.  
 Baza: `szkola`.
 
-## 12. Projekt INF.03
+## 15. Projekt INF.03
 
 Cel: połączyć `LEFT JOIN`, `COUNT`, `CASE`, `COALESCE`, `GROUP BY`, `HAVING` i `ORDER BY`.  
 Rezultat: raport filmów z liczbą biletów i przychodem.  
 Baza: `kino`.
 
-## 13. CREATE TABLE
+## 16. CREATE TABLE
 
 Cel: utworzyć tabelę od podstaw w pustej bazie.
 Ćwicz: nazwy tabel, kolumny, typy i `PRIMARY KEY`.
 Baza: `Laboratorium struktury`.
 
-## 14. Kolumny i ograniczenia
+## 17. Kolumny i ograniczenia
 
 Cel: określać, jakie wartości mogą trafić do kolumn.
 Ćwicz: `NOT NULL` i `DEFAULT` razem z kluczem głównym.
 Baza: `Laboratorium struktury`.
 
-## 15. ALTER TABLE
+## 18. ALTER TABLE
 
 Cel: zmieniać strukturę istniejącej tabeli bez usuwania jej danych.
 Ćwicz: `ALTER TABLE ... ADD COLUMN`.
 Baza: `Laboratorium struktury`.
 
-## 16. Relacje i inspekcja schematu
+## 19. Relacje i inspekcja schematu
 
 Cel: połączyć tabele kluczem obcym i rozpoznać relację w schemacie.
 Ćwicz: `FOREIGN KEY`, `REFERENCES` oraz `PRAGMA foreign_key_list`.
@@ -116,4 +147,4 @@ Baza: `Laboratorium struktury`.
 
 ## Sugerowany rytm
 
-Na jedną sesję wybierz jedną lekcję. Po ukończeniu lekcji zmień dataset i napisz własne zapytanie o podobnej konstrukcji. Przed egzaminem wykonaj lekcje 8–12 bez otwierania rozwiązania, a następnie powtórz projekt końcowy na bazie MySQL.
+Na jedną sesję wybierz jedną lekcję. Po ukończeniu lekcji zmień dataset i napisz własne zapytanie o podobnej konstrukcji. Przed egzaminem wykonaj samodzielne zadania z lekcji 7–15, a następnie powtórz projekt końcowy na bazie MySQL.

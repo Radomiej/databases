@@ -13,7 +13,7 @@ phpMyAdmin nie jest endpointem aplikacji. Możesz używać go do importu skryptu
 
 ## Pomoc, szkice i ustawienia lokalne
 
-Przycisk **Pomoc** w menu bocznym opisuje kolejność pracy: wybór trybu i bazy, zadanie pokazowe, zadania samodzielne oraz uruchamianie i sprawdzanie zapytań. Szkic SQL jest zapisywany osobno dla każdej lekcji i każdego zadania, również po odświeżeniu strony.
+Przycisk **Pomoc** w menu bocznym opisuje kolejność pracy: wybór trybu i bazy, zadanie pokazowe, zadania samodzielne oraz uruchamianie i sprawdzanie zapytań. Wybrane lekcje HAVING i JOIN mają rozwijane przykłady krok po kroku z rzeczywistymi wynikami. „Rozwiązanie” jest dostępne tylko przy zadaniu pokazowym; samodzielne można nadal ocenić przez „Sprawdź”. Szkic SQL jest zapisywany osobno dla każdej lekcji i każdego zadania, również po odświeżeniu strony.
 
 Historia zapisuje pełny tekst uruchomionego lub sprawdzonego zapytania wraz z bazą, trybem, lekcją, zadaniem, wynikiem oraz czasem względnym i dokładnym. Jest przechowywana w IndexedDB; starsze wpisy z localStorage są migrowane przy pierwszym otwarciu.
 
@@ -92,7 +92,7 @@ Testy obejmują silnik SQLite, wszystkie rozwiązania lekcji, walidator wyników
 ## Zawartość
 
 - `src/data/datasets.js` — cztery seedowane bazy oraz pusty dataset Laboratorium struktury.
-- `src/data/lessons.js` — 12 lekcji od SELECT do projektu INF.03 oraz 4 lekcje DDL.
+- `src/data/lessons.js` — 15 lekcji od SELECT do projektu INF.03 oraz 4 lekcje DDL.
 - `src/services/sqliteEngine.js` — wykonywanie zapytań SQLite w przeglądarce.
 - `src/services/mysqlApi.js` — klient lokalnego API MySQL.
 - `server/` — Express + mysql2, bez PHP.

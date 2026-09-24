@@ -9,6 +9,7 @@ it('explains the course flow and distinguishes SQLite checking from MySQL practi
   expect(screen.getByText(/Zadanie pokazowe/i)).toBeInTheDocument();
   expect(screen.getAllByText(/w trybie SQLite/i).length).toBeGreaterThan(0);
   expect(screen.getAllByText(/MySQL/i).length).toBeGreaterThan(0);
+  expect(screen.getByText(/W zadaniu pokazowym możesz zobaczyć rozwiązanie; w samodzielnym przycisk „Rozwiązanie” jest ukryty, ale „Sprawdź” nadal ocenia Twoje zapytanie/)).toBeInTheDocument();
 });
 
 it('closes when the student chooses the close control', () => {
