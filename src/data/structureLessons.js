@@ -15,11 +15,10 @@ const tableSchema = (name, tableColumns, settings = {}) => ({ name, columns: tab
 export const STRUCTURE_LESSONS = [
   {
     id: 'create-table',
-    order: 13,
     title: 'CREATE TABLE',
     datasetId: 'structure-lab',
     difficulty: 'Struktura',
-    theory: 'CREATE TABLE tworzy tabelę. W nawiasie definiujesz kolumny, ich typy oraz podstawowe ustawienia. W pustej bazie możesz od razu zbudować własny schemat.',
+    theory: 'CREATE TABLE tworzy tabelę. W nawiasie definiujesz nazwy kolumn, ich typy i ustawienia. PRIMARY KEY identyfikuje jednoznacznie każdy rekord, a NOT NULL wymaga podania wartości w kolumnie. W pustej bazie możesz od razu zbudować własny schemat.',
     syntax: ['CREATE TABLE nazwa (kolumna typ);', 'CREATE TABLE osoby (id INTEGER PRIMARY KEY, imie TEXT NOT NULL);'],
     example: 'CREATE TABLE osoby (id INTEGER PRIMARY KEY, imie TEXT NOT NULL, nazwisko TEXT NOT NULL);',
     task: 'Utwórz tabelę osoby z identyfikatorem oraz imieniem i nazwiskiem.',
@@ -34,7 +33,6 @@ export const STRUCTURE_LESSONS = [
   },
   {
     id: 'column-constraints',
-    order: 14,
     title: 'Kolumny i ograniczenia',
     datasetId: 'structure-lab',
     difficulty: 'Struktura',
@@ -53,7 +51,6 @@ export const STRUCTURE_LESSONS = [
   },
   {
     id: 'alter-table',
-    order: 15,
     title: 'ALTER TABLE',
     datasetId: 'structure-lab',
     difficulty: 'Struktura',
@@ -72,7 +69,6 @@ export const STRUCTURE_LESSONS = [
   },
   {
     id: 'schema-relations',
-    order: 16,
     title: 'Relacje i inspekcja schematu',
     datasetId: 'structure-lab',
     difficulty: 'Struktura',

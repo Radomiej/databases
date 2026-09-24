@@ -6,6 +6,7 @@ export const LESSON_TOPIC_PLAN = [
   { lessonId: 'aggregates', introduces: ['aggregates', 'aliases'] },
   { lessonId: 'group-by', introduces: ['group-by'] },
   { lessonId: 'having', introduces: ['having'] },
+  { lessonId: 'where-having', introduces: [] },
   { lessonId: 'inner-join', introduces: ['inner-join'] },
   { lessonId: 'left-join', introduces: ['left-join'] },
   { lessonId: 'multi-join', introduces: ['multi-join'] },

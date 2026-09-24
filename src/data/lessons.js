@@ -4,7 +4,6 @@ import { STRUCTURE_LESSONS } from './structureLessons.js';
 const LESSON_DEFINITIONS = [
   {
     id: 'select-limit',
-    order: 1,
     title: 'SELECT i LIMIT',
     datasetId: 'biblioteka',
     difficulty: 'Start',
@@ -19,7 +18,6 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'where',
-    order: 2,
     title: 'WHERE i warunki',
     datasetId: 'biblioteka',
     difficulty: 'Podstawy',
@@ -34,7 +32,6 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'order-by',
-    order: 3,
     title: 'ORDER BY',
     datasetId: 'biblioteka',
     difficulty: 'Podstawy',
@@ -49,7 +46,6 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'like-null',
-    order: 4,
     title: 'LIKE, IN, BETWEEN i NULL',
     datasetId: 'biblioteka',
     difficulty: 'Podstawy',
@@ -64,14 +60,13 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'aggregates',
-    order: 5,
     title: 'Funkcje agregujące',
     datasetId: 'sklep',
     difficulty: 'Średni',
     theory: 'Funkcje agregujące obliczają wartość dla wielu wierszy. COUNT liczy rekordy, SUM dodaje liczby, AVG oblicza średnią, a MIN i MAX wybierają skrajne wartości. Alias AS nadaje wynikowej kolumnie czytelną nazwę.',
     syntax: ['COUNT(*)', 'SUM(ilosc * cena_sztukowa)', 'ROUND(AVG(cena), 2) AS srednia_cena'],
-    example: 'SELECT kategoria, COUNT(*) AS liczba FROM produkty GROUP BY kategoria;',
-    task: 'Oblicz liczbę produktów oraz średnią cenę, zaokrąglając wynik do dwóch miejsc po przecinku.',
+    example: 'SELECT COUNT(*) AS liczba_produktow FROM produkty;',
+    task: 'Z tabeli produkty oblicz liczbę wszystkich produktów oraz średnią cenę zaokrągloną do dwóch miejsc po przecinku. Nazwij kolumny wyniku odpowiednio liczba_produktow i srednia_cena.',
     hint: 'Użyj COUNT(*) oraz ROUND(AVG(cena), 2) bez GROUP BY.',
     solution: 'SELECT COUNT(*) AS liczba_produktow, ROUND(AVG(cena), 2) AS srednia_cena FROM produkty;',
     successMessage: 'Świetnie — potrafisz tworzyć podsumowania całej tabeli.',
@@ -79,14 +74,13 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'group-by',
-    order: 6,
     title: 'GROUP BY',
     datasetId: 'sklep',
     difficulty: 'Średni',
     theory: 'GROUP BY dzieli rekordy na grupy według wybranej kolumny. Funkcja agregująca jest wtedy liczona osobno dla każdej grupy. Każda zwykła kolumna z SELECT powinna pojawić się w GROUP BY, jeżeli nie jest agregowana.',
     syntax: ['SELECT kolumna, COUNT(*) FROM tabela GROUP BY kolumna;', 'GROUP BY kategoria ORDER BY kategoria;'],
     example: 'SELECT miasto, COUNT(*) AS liczba_klientow FROM klienci GROUP BY miasto;',
-    task: 'Policz produkty w każdej kategorii i posortuj kategorie alfabetycznie.',
+    task: 'Policz produkty w każdej kategorii. Zwróć kolumnę kategoria oraz wynik COUNT(*) nazwany liczba. Posortuj kategorie alfabetycznie.',
     hint: 'Wybierz kategoria oraz COUNT(*), a następnie dodaj GROUP BY kategoria.',
     solution: 'SELECT kategoria, COUNT(*) AS liczba FROM produkty GROUP BY kategoria ORDER BY kategoria;',
     successMessage: 'Dobra robota — potrafisz już tworzyć zestawienia za pomocą GROUP BY.',
@@ -98,22 +92,34 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'having',
-    order: 7,
     title: 'HAVING',
     datasetId: 'sklep',
     difficulty: 'Średni',
     theory: 'HAVING filtruje gotowe grupy, więc używamy go z GROUP BY i funkcjami agregującymi. WHERE działa na pojedynczych wierszach przed grupowaniem, a HAVING na grupach po obliczeniu COUNT, SUM lub AVG.',
     syntax: ['GROUP BY klient_id HAVING COUNT(*) > 1;', 'GROUP BY kategoria HAVING AVG(cena) >= 100;'],
     example: 'SELECT klient_id, COUNT(*) AS liczba FROM zamowienia GROUP BY klient_id HAVING COUNT(*) > 1;',
-    task: 'Pokaż identyfikatory klientów, którzy złożyli więcej niż jedno zamówienie. Uporządkuj wynik rosnąco według identyfikatora.',
+    task: 'Pokaż identyfikatory klientów, którzy złożyli więcej niż jedno zamówienie, oraz liczbę ich zamówień nazwaną liczba_zamowien. Uporządkuj wynik rosnąco według identyfikatora.',
     hint: 'Pogrupuj po klient_id, policz zamówienia, użyj HAVING COUNT(*) > 1 i sortowania rosnącego.',
     solution: 'SELECT klient_id, COUNT(*) AS liczba_zamowien FROM zamowienia GROUP BY klient_id HAVING COUNT(*) > 1 ORDER BY klient_id;',
     successMessage: 'Brawo — rozróżniasz już filtrowanie wierszy od filtrowania grup.',
     expected: { columns: ['klient_id', 'liczba_zamowien'], rows: [[1, 2]], strictOrder: true },
   },
   {
+    id: 'where-having',
+    title: 'WHERE i HAVING razem',
+    datasetId: 'sklep',
+    difficulty: 'Średni',
+    theory: 'WHERE usuwa pojedyncze zamówienia przed grupowaniem. GROUP BY tworzy grupy z pozostałych wierszy, a HAVING sprawdza wynik COUNT dla każdej grupy. Dzięki temu możesz pytać o klientów z więcej niż jednym zrealizowanym zamówieniem.',
+    syntax: ["WHERE status = 'zrealizowane' GROUP BY klient_id HAVING COUNT(*) > 1;"],
+    example: "SELECT klient_id, COUNT(*) AS liczba FROM zamowienia WHERE status = 'zrealizowane' GROUP BY klient_id HAVING COUNT(*) > 1 ORDER BY klient_id;",
+    task: 'Pokaż klient_id oraz liczbę zrealizowanych zamówień jako liczba, ale tylko dla klientów mających więcej niż jedno takie zamówienie. Posortuj po klient_id rosnąco.',
+    hint: "Najpierw WHERE status = 'zrealizowane', potem GROUP BY klient_id, na końcu HAVING COUNT(*) > 1.",
+    solution: "SELECT klient_id, COUNT(*) AS liczba FROM zamowienia WHERE status = 'zrealizowane' GROUP BY klient_id HAVING COUNT(*) > 1 ORDER BY klient_id;",
+    successMessage: 'Dobrze rozdzielasz filtrowanie wierszy od filtrowania grup.',
+    expected: { columns: ['klient_id', 'liczba'], rows: [[1, 2]], strictOrder: true },
+  },
+  {
     id: 'inner-join',
-    order: 8,
     title: 'INNER JOIN',
     datasetId: 'sklep',
     difficulty: 'Średni',
@@ -132,14 +138,13 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'left-join',
-    order: 9,
     title: 'LEFT JOIN',
     datasetId: 'kino',
     difficulty: 'Rozszerzony',
     theory: 'LEFT JOIN zachowuje wszystkie rekordy z lewej tabeli, nawet gdy po prawej nie ma dopasowania. Brakujące wartości pojawiają się jako NULL. To ważne przy pytaniach typu: pokaż również filmy bez seansów albo klientów bez zamówień.',
     syntax: ['FROM filmy f LEFT JOIN seanse s ON s.film_id = f.id;', 'WHERE s.id IS NULL;'],
     example: 'SELECT f.tytul, s.id FROM filmy f LEFT JOIN seanse s ON s.film_id = f.id;',
-    task: 'Pokaż filmy, dla których nie zaplanowano żadnego seansu.',
+    task: 'Pokaż tytuły filmów bez zaplanowanego seansu oraz identyfikator seansu (NULL) nazwany seans_id.',
     hint: 'Użyj LEFT JOIN, a potem odfiltruj brak dopasowania przez WHERE s.id IS NULL.',
     solution: 'SELECT f.tytul, s.id AS seans_id FROM filmy f LEFT JOIN seanse s ON s.film_id = f.id WHERE s.id IS NULL;',
     successMessage: 'Świetnie — LEFT JOIN jest opanowany i wiesz, skąd bierze się NULL.',
@@ -147,7 +152,6 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'multi-join',
-    order: 10,
     title: 'Wielokrotne JOIN i aliasy',
     datasetId: 'szkola',
     difficulty: 'Rozszerzony',
@@ -173,7 +177,6 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'subqueries',
-    order: 11,
     title: 'Podzapytania i WITH',
     datasetId: 'szkola',
     difficulty: 'Rozszerzony',
@@ -188,15 +191,14 @@ const LESSON_DEFINITIONS = [
   },
   {
     id: 'final-project',
-    order: 12,
     title: 'Projekt INF.03',
     datasetId: 'kino',
     difficulty: 'Projekt',
-    theory: 'W zadaniu końcowym połączysz kilka umiejętności: LEFT JOIN, agregacje, CASE, COALESCE, GROUP BY i HAVING. LEFT JOIN początkowo zachowuje wszystkie filmy, ale warunek HAVING COUNT(b.id) > 0 usuwa te bez biletów. Liczba obejmuje wszystkie bilety, także zarezerwowane, a przychód obliczaj wyłącznie na podstawie biletów opłaconych.',
+    theory: 'W zadaniu końcowym połączysz LEFT JOIN, agregacje, CASE, COALESCE, GROUP BY i HAVING. CASE wybiera wartość zależnie od warunku: do przychodu dolicz cenę tylko przy opłaconym bilecie. COALESCE zastępuje NULL podaną wartością, tutaj zerem. LEFT JOIN początkowo zachowuje wszystkie filmy, ale HAVING COUNT(b.id) > 0 usuwa te bez biletów. Liczba obejmuje wszystkie bilety, także zarezerwowane.',
     syntax: ['COALESCE(wartosc, 0)', "SUM(CASE WHEN status = 'opłacony' THEN cena ELSE 0 END)", 'GROUP BY f.id, f.tytul HAVING COUNT(b.id) > 0'],
     example: 'Raport filmu, liczby biletów i przychodu z opłaconych biletów.',
-    task: 'Zbuduj raport filmów z liczbą biletów i przychodem, a następnie posortuj go malejąco według przychodu.',
-    hint: 'Połącz filmy → seanse → bilety. Grupuj po filmie, odfiltruj HAVING COUNT(b.id) > 0.',
+    task: 'Dla filmów z co najmniej jednym biletem pokaż tytul, liczbę wszystkich biletów (także zarezerwowanych) jako liczba_biletow i przychód wyłącznie z biletów opłaconych jako przychod. Posortuj malejąco według przychodu.',
+    hint: "Połącz filmy → seanse → bilety przez LEFT JOIN. Grupuj po filmie i użyj HAVING COUNT(b.id) > 0. Do przychodu sumuj CASE WHEN b.status = 'opłacony' THEN s.cena ELSE 0 END; wynik możesz zabezpieczyć przez COALESCE(..., 0).",
     solution: "SELECT f.tytul, COUNT(b.id) AS liczba_biletow, COALESCE(ROUND(SUM(CASE WHEN b.status = 'opłacony' THEN s.cena ELSE 0 END), 2), 0) AS przychod FROM filmy f LEFT JOIN seanse s ON s.film_id = f.id LEFT JOIN bilety b ON b.seans_id = s.id GROUP BY f.id, f.tytul HAVING COUNT(b.id) > 0 ORDER BY przychod DESC;",
     successMessage: 'Zaliczone — potrafisz zbudować pełny raport na kilku powiązanych tabelach.',
     expected: {
@@ -209,7 +211,8 @@ const LESSON_DEFINITIONS = [
 
 const CORE_LESSONS = LESSON_DEFINITIONS.map((lesson) => ({ ...lesson, tasks: buildLessonTasks(lesson) }));
 
-export const LESSONS = [...CORE_LESSONS, ...STRUCTURE_LESSONS];
+export const LESSONS = [...CORE_LESSONS, ...STRUCTURE_LESSONS]
+  .map((lesson, index) => ({ ...lesson, order: index + 1 }));
 export const COURSE_LESSONS = LESSONS;
 
 export const LESSON_MAP = Object.fromEntries(COURSE_LESSONS.map((lesson) => [lesson.id, lesson]));

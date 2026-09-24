@@ -29,8 +29,8 @@ describe('lesson solutions', () => {
   });
 
   it('provides three actionable tasks for every lesson', () => {
-    expect(LESSONS).toHaveLength(16);
-    expect(QUERY_LESSONS).toHaveLength(12);
+    expect(LESSONS).toHaveLength(17);
+    expect(QUERY_LESSONS).toHaveLength(13);
     LESSONS.forEach((lesson) => {
       expect(lesson.tasks).toHaveLength(3);
       expect(new Set(lesson.tasks.map((task) => task.id)).size).toBe(3);
@@ -43,7 +43,7 @@ describe('lesson solutions', () => {
   });
 
   it('exposes schema lessons as the continuation of the course', () => {
-    expect(COURSE_LESSONS).toHaveLength(16);
+    expect(COURSE_LESSONS).toHaveLength(17);
     expect(COURSE_LESSONS.slice(-4).map((lesson) => lesson.datasetId)).toEqual([
       'structure-lab',
       'structure-lab',
@@ -52,6 +52,13 @@ describe('lesson solutions', () => {
     ]);
     expect(getLesson('create-table').datasetId).toBe('structure-lab');
     expect(getLesson('schema-relations').tasks).toHaveLength(3);
+  });
+
+  it('inserts a WHERE/HAVING practice lesson without changing old identifiers', () => {
+    expect(LESSONS.map((lesson) => lesson.order)).toEqual(LESSONS.map((_, index) => index + 1));
+    expect(LESSONS.slice(6, 9).map((lesson) => lesson.id)).toEqual(['having', 'where-having', 'inner-join']);
+    expect(getLesson('having').tasks.map((task) => task.id)).toContain('popular-products');
+    expect(getLesson('where-having').tasks).toHaveLength(3);
   });
 
   it('keeps every task within the material introduced so far', () => {
@@ -70,6 +77,8 @@ describe('lesson solutions', () => {
       });
 
       const allowedTopics = new Set([...knownTopics, ...plan.introduces]);
+      const unsupportedExampleTopics = [...getSqlTopics(lesson.example)].filter((topic) => !allowedTopics.has(topic));
+      expect(unsupportedExampleTopics, `${lesson.id} introduces a future topic in its example`).toEqual([]);
       lesson.tasks.forEach((task) => {
         const unsupportedTopics = [...getSqlTopics(task.solution)].filter((topic) => !allowedTopics.has(topic));
         expect(unsupportedTopics, `${lesson.id}/${task.id} uses future SQL topics`).toEqual([]);
@@ -79,6 +88,19 @@ describe('lesson solutions', () => {
     });
 
     expect(LESSON_TOPIC_PLAN).toHaveLength(QUERY_LESSONS.length);
+  });
+
+  it('names every required SQL result alias in the task prompt', () => {
+    QUERY_LESSONS.forEach((lesson) => lesson.tasks.forEach((task) => {
+      const aliases = [...task.solution.matchAll(/\bAS\s+([a-z_][a-z0-9_]*)/giu)].map((match) => match[1]);
+      aliases.forEach((alias) => expect(task.prompt, `${lesson.id}/${task.id} omits alias ${alias}`).toContain(alias));
+    }));
+  });
+
+  it('explains the new conditional expressions before the final report', () => {
+    const theory = getLesson('final-project').theory;
+    expect(theory).toMatch(/CASE.*warunk/i);
+    expect(theory).toMatch(/COALESCE.*NULL/i);
   });
 
   it('keeps the first lesson limited to SELECT and LIMIT on different tables', () => {
