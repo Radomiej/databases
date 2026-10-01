@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createMysqlConfig } from './queryPolicy.js';
 import { describeMysqlTable, executeMysqlQuery, listMysqlRelations, listMysqlTables, testMysqlConnection } from './mysqlClient.js';
-import { postAiTutor } from './aiTutorRoute.js';
+import { getFreeModels, postAiTutor } from './aiTutorRoute.js';
 
 function loadLocalEnv(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -100,6 +100,7 @@ app.post('/api/mysql/relations', async (request, response) => {
 });
 
 app.post('/api/ai/chat', postAiTutor);
+app.get('/api/ai/free-models', getFreeModels);
 
 app.use((_request, response) => response.status(404).json({ ok: false, errorType: 'not-found', message: 'Nie znaleziono endpointu.', hint: 'Sprawdź adres API connectora.' }));
 

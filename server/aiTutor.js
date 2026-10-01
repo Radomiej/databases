@@ -21,6 +21,8 @@ const PROVIDERS = {
     model: process.env.OPENAI_TUTOR_MODEL || 'gpt-5-mini',
   },
 };
+const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
+const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 function boundedText(value, maxLength) {
   return typeof value === 'string' ? value.slice(0, maxLength) : '';
@@ -98,11 +100,12 @@ async function resolveCustomEndpoint(baseUrl, lookupImpl) {
   return `${parsed.origin}${endpointPath}`;
 }
 
-function validatePayload(payload) {
+function validatePayload(payload, env) {
   const provider = payload?.provider;
-  if (!Object.hasOwn(PROVIDERS, provider)) throw new Error('Wybierz Claude Haiku albo OpenAI.');
-  const apiKey = typeof payload.apiKey === 'string' ? payload.apiKey.trim() : '';
-  if (!apiKey || apiKey.length > 512 || /[\r\n]/u.test(apiKey)) throw new Error('Wpisz poprawny klucz API.');
+  if (!Object.hasOwn(PROVIDERS, provider) && provider !== 'openrouter') throw new Error('Wybierz Claude Haiku, OpenAI albo OpenRouter Free.');
+  const apiKey = provider === 'openrouter' ? env.OPENROUTER_API_KEY?.trim() : typeof payload.apiKey === 'string' ? payload.apiKey.trim() : '';
+  if (provider === 'openrouter' && !apiKey) throw new Error('OpenRouter Free nie jest skonfigurowany na serwerze.');
+  if (provider !== 'openrouter' && (!apiKey || apiKey.length > 512 || /[\r\n]/u.test(apiKey))) throw new Error('Wpisz poprawny klucz API.');
   if (!Array.isArray(payload.messages) || payload.messages.length < 1 || payload.messages.length > 16) throw new Error('Rozmowa jest za długa. Wyczyść ją i zacznij nową.');
   const messages = payload.messages.map((message) => {
     if (!['user', 'assistant'].includes(message?.role) || typeof message?.content !== 'string' || !message.content.trim() || message.content.length > 2000) {
@@ -122,6 +125,25 @@ function validatePayload(payload) {
   return { provider, apiKey, messages, context: cleanContext(payload.context), model, baseUrl };
 }
 
+export async function listFreeOpenRouterModels(fetchImpl = fetch, env = process.env) {
+  if (!env.OPENROUTER_API_KEY?.trim()) return { configured: false, models: [] };
+  let response;
+  try {
+    response = await fetchImpl(OPENROUTER_MODELS_URL, { method: 'GET', signal: AbortSignal.timeout(15000) });
+  } catch {
+    throw new Error('Nie udało się pobrać aktualnej listy bezpłatnych modeli OpenRoutera.');
+  }
+  if (!response.ok) throw new Error('OpenRouter nie udostępnił teraz katalogu modeli. Spróbuj ponownie później.');
+  const data = await response.json();
+  const isZeroPrice = (price) => price === 0 || (typeof price === 'string' && /^0(?:\.0+)?$/u.test(price));
+  const models = (Array.isArray(data.data) ? data.data : [])
+    .filter((item) => item && typeof item.id === 'string' && item.id.length <= 160 && item.pricing &&
+      isZeroPrice(item.pricing.prompt) && isZeroPrice(item.pricing.completion) && Object.values(item.pricing).every(isZeroPrice))
+    .map((item) => ({ id: item.id, name: typeof item.name === 'string' && item.name.trim() ? item.name.slice(0, 160) : item.id }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+  return { configured: true, models };
+}
+
 async function readProviderError(response, provider) {
   try { await response.json(); } catch { /* Do not echo provider response bodies to the browser. */ }
   if (response.status === 401 || response.status === 403) return new Error('Dostawca odrzucił klucz API. Sprawdź jego poprawność i dostęp do wybranego modelu.');
@@ -129,17 +151,24 @@ async function readProviderError(response, provider) {
   return new Error(`Dostawca AI zwrócił błąd (${response.status}). Spróbuj ponownie.`);
 }
 
-export async function requestTutorReply(payload, fetchImpl = fetch, lookupImpl = lookup) {
-  const { provider, apiKey, messages, context, baseUrl, model } = validatePayload(payload);
+export async function requestTutorReply(payload, fetchImpl = fetch, lookupImpl = lookup, env = process.env) {
+  const { provider, apiKey, messages, context, baseUrl, model } = validatePayload(payload, env);
+  if (provider === 'openrouter') {
+    const catalog = await listFreeOpenRouterModels(fetchImpl, env);
+    if (!catalog.models.some((freeModel) => freeModel.id === model)) throw new Error('Wybrany model nie jest już darmowy albo nie występuje w aktualnym katalogu OpenRoutera.');
+  }
   const modelInfo = PROVIDERS[provider];
-  const modelName = model || modelInfo.model;
+  const modelName = provider === 'openrouter' ? model : model || modelInfo.model;
   const headers = { 'content-type': 'application/json' };
   let body;
-  let requestUrl = modelInfo.url;
+  let requestUrl = provider === 'openrouter' ? OPENROUTER_CHAT_URL : modelInfo.url;
   if (provider === 'claude') {
     headers['x-api-key'] = apiKey;
     headers['anthropic-version'] = '2023-06-01';
     body = { model: modelName, max_tokens: 1000, system: tutorInstructions(context), messages };
+  } else if (provider === 'openrouter') {
+    headers.authorization = `Bearer ${apiKey}`;
+    body = { model: modelName, max_tokens: 1000, messages: [{ role: 'system', content: tutorInstructions(context) }, ...messages] };
   } else if (baseUrl) {
     requestUrl = await resolveCustomEndpoint(baseUrl, lookupImpl);
     headers.authorization = `Bearer ${apiKey}`;
@@ -161,19 +190,29 @@ export async function requestTutorReply(payload, fetchImpl = fetch, lookupImpl =
   const data = await response.json();
   const reply = provider === 'claude'
     ? data.content?.filter((block) => block.type === 'text').map((block) => block.text).join('\n').trim()
-    : baseUrl
+    : provider === 'openrouter' || baseUrl
       ? (typeof data.choices?.[0]?.message?.content === 'string' ? data.choices[0].message.content : data.choices?.[0]?.message?.content?.map((item) => item.text ?? '').join('\n')).trim()
       : (data.output_text ?? data.output?.flatMap((item) => item.content ?? []).filter((item) => item.type === 'output_text').map((item) => item.text).join('\n')).trim();
   if (!reply) throw new Error('Asystent nie zwrócił tekstowej odpowiedzi. Spróbuj zadać pytanie ponownie.');
   return { ok: true, reply, provider, model: modelName };
 }
 
-export function createAiTutorHandler(fetchImpl = fetch, lookupImpl = lookup) {
+export function createAiTutorHandler(fetchImpl = fetch, lookupImpl = lookup, env = process.env) {
   return async (payload) => {
     try {
-      return { status: 200, body: await requestTutorReply(payload, fetchImpl, lookupImpl) };
+      return { status: 200, body: await requestTutorReply(payload, fetchImpl, lookupImpl, env) };
     } catch (error) {
       return { status: 400, body: { ok: false, message: error instanceof Error ? error.message : 'Nie udało się uzyskać odpowiedzi.' } };
+    }
+  };
+}
+
+export function createFreeModelsHandler(fetchImpl = fetch, env = process.env) {
+  return async () => {
+    try {
+      return { status: 200, body: { ok: true, ...await listFreeOpenRouterModels(fetchImpl, env) } };
+    } catch (error) {
+      return { status: 502, body: { ok: false, message: error instanceof Error ? error.message : 'Nie udało się pobrać modeli.' } };
     }
   };
 }

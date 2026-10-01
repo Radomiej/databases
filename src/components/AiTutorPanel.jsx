@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { sendTutorMessage } from '../services/aiTutorApi.js';
+import { getFreeOpenRouterModels, sendTutorMessage } from '../services/aiTutorApi.js';
 
 function makeContext(lesson, task, schema) {
   return {
@@ -18,18 +18,36 @@ function makeContext(lesson, task, schema) {
   };
 }
 
-export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendTutorMessage }) {
+export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendTutorMessage, loadFreeModels = getFreeOpenRouterModels }) {
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState('claude');
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [model, setModel] = useState('');
+  const [freeModels, setFreeModels] = useState([]);
+  const [freeModelsStatus, setFreeModelsStatus] = useState('idle');
+  const [freeModelsRefresh, setFreeModelsRefresh] = useState(0);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const messageListRef = useRef(null);
   const context = useMemo(() => makeContext(lesson, task, schema), [lesson, task, schema]);
+
+  useEffect(() => {
+    if (provider !== 'openrouter') return undefined;
+    let active = true;
+    setFreeModelsStatus('loading');
+    loadFreeModels().then((result) => {
+      if (!active) return;
+      setFreeModels(result.models ?? []);
+      setFreeModelsStatus(result.configured ? 'ready' : 'unconfigured');
+      setModel('');
+    }).catch(() => {
+      if (active) { setFreeModels([]); setFreeModelsStatus('error'); }
+    });
+    return () => { active = false; };
+  }, [provider, loadFreeModels, freeModelsRefresh]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -46,7 +64,8 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
     event.preventDefault();
     const content = draft.trim();
     if (!content || pending) return;
-    if (!apiKey.trim()) { setError('Wpisz klucz API wybranego dostawcy.'); return; }
+    if (provider !== 'openrouter' && !apiKey.trim()) { setError('Wpisz klucz API wybranego dostawcy.'); return; }
+    if (provider === 'openrouter' && !model) { setError('Wybierz model z aktualnej listy darmowych modeli.'); return; }
     const recent = messages.slice(-14);
     if (recent[0]?.role === 'assistant') recent.shift();
     const nextMessages = [...recent, { role: 'user', content }];
@@ -54,12 +73,13 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
     setError('');
     setPending(true);
     try {
-      const response = await sendMessage({ provider, apiKey, baseUrl: provider === 'openai' ? baseUrl.trim() : '', model: provider === 'openai' ? model.trim() : '', messages: nextMessages, context });
+      const response = await sendMessage({ provider, ...(provider === 'openrouter' ? {} : { apiKey }), baseUrl: provider === 'openai' ? baseUrl.trim() : '', model: provider === 'openai' || provider === 'openrouter' ? model.trim() : '', messages: nextMessages, context });
       setMessages([...nextMessages, { role: 'assistant', content: response.reply }].slice(-16));
     } catch (failure) {
       setMessages((current) => [...current, { role: 'user', content }].slice(-16));
       setDraft(content);
       setError(failure instanceof Error ? failure.message : 'Nie udało się wysłać wiadomości.');
+      if (provider === 'openrouter' && /darmowy|katalog/i.test(failure instanceof Error ? failure.message : '')) setFreeModelsRefresh((value) => value + 1);
     } finally { setPending(false); }
   };
 
@@ -89,14 +109,21 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
         <div className="ai-tutor-header-actions"><button type="button" className="ai-tutor-icon-button" aria-label="Zapomnij klucz i wyczyść rozmowę" title="Zapomnij klucz i wyczyść rozmowę" onClick={clearConversation}><i className="bi bi-trash3" aria-hidden="true" /></button><button type="button" className="ai-tutor-icon-button" aria-label="Zamknij panel korepetytora" onClick={() => setOpen(false)}><i className="bi bi-x-lg" aria-hidden="true" /></button></div>
       </header>
       <div className="ai-tutor-settings">
-        <label className="ai-tutor-field"><span>Dostawca AI</span><select className="form-select" value={provider} onChange={switchProvider}><option value="claude">Claude Haiku</option><option value="openai">OpenAI</option></select></label>
-        <label className="ai-tutor-field"><span>Klucz API</span><input className="form-control" type="password" autoComplete="off" spellCheck="false" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider === 'claude' ? 'sk-ant-…' : 'sk-…'} /></label>
+        <label className="ai-tutor-field"><span>Dostawca AI</span><select className="form-select" value={provider} onChange={switchProvider}><option value="claude">Claude Haiku</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter Free</option></select></label>
+        {provider !== 'openrouter' && <label className="ai-tutor-field"><span>Klucz API</span><input className="form-control" type="password" autoComplete="off" spellCheck="false" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider === 'claude' ? 'sk-ant-…' : 'sk-…'} /></label>}
+        {provider === 'openrouter' && <>
+          <label className="ai-tutor-field"><span>Darmowy model OpenRouter</span><select className="form-select" value={model} onChange={(event) => setModel(event.target.value)} disabled={freeModelsStatus !== 'ready'}><option value="">{freeModelsStatus === 'loading' ? 'Pobieranie listy…' : 'Wybierz darmowy model…'}</option>{freeModels.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          {freeModelsStatus === 'unconfigured' && <small className="ai-tutor-endpoint-help">Backend nie ma skonfigurowanego OPENROUTER_API_KEY. Klucz pozostaje wyłącznie po stronie serwera.</small>}
+          {freeModelsStatus === 'error' && <small className="ai-tutor-endpoint-help">Nie udało się pobrać listy darmowych modeli. Sprawdź backend i spróbuj ponownie.</small>}
+          {freeModelsStatus === 'ready' && <small className="ai-tutor-endpoint-help">Lista pochodzi z aktualnego katalogu OpenRoutera. Backend ponownie sprawdza cenę modelu przy każdym pytaniu i odrzuca modele płatne.</small>}
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setFreeModelsRefresh((value) => value + 1)} disabled={freeModelsStatus === 'loading'}>Odśwież listę darmowych modeli</button>
+        </>}
         {provider === 'openai' && <>
           <label className="ai-tutor-field"><span>Własny endpoint OpenAI-compatible</span><input className="form-control" type="url" autoComplete="off" spellCheck="false" maxLength="2048" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://openrouter.ai/api/v1" /></label>
           <label className="ai-tutor-field"><span>Model OpenAI-compatible</span><input className="form-control" type="text" autoComplete="off" maxLength="160" value={model} onChange={(event) => setModel(event.target.value)} placeholder="np. anthropic/claude-haiku-4.5" /></label>
           <small className="ai-tutor-endpoint-help">Puste pole używa oficjalnego OpenAI. Własny adres: baza API (np. …/api/v1) albo pełny endpoint …/chat/completions. Model wpisz zgodnie z ofertą dostawcy.</small>
         </>}
-        <p className="ai-tutor-privacy">Klucz pozostaje w pamięci tej karty. Pytanie oraz bieżąca lekcja, zadanie i schemat bazy trafią do {provider === 'openai' && baseUrl.trim() ? 'wskazanego endpointu' : 'wybranego dostawcy AI'}. Nie wysyłamy wyników ani rekordów tabel.</p>
+        <p className="ai-tutor-privacy">{provider === 'openrouter' ? 'Klucz OpenRoutera jest przechowywany tylko w zmiennej środowiskowej backendu. OpenRouter i operator modelu otrzymają pytanie oraz kontekst; operator może je przechowywać.' : 'Klucz pozostaje w pamięci tej karty.'} Pytanie oraz bieżąca lekcja, zadanie i schemat bazy trafią do {provider === 'openai' && baseUrl.trim() ? 'wskazanego endpointu' : 'wybranego dostawcy AI'}. Nie wysyłamy wyników ani rekordów tabel.</p>
       </div>
       <div className="ai-tutor-messages" ref={messageListRef} aria-live="polite" aria-label="Rozmowa">
         {messages.length === 0 && <div className="ai-tutor-welcome"><span className="ai-tutor-welcome-icon"><i className="bi bi-chat-square-text" aria-hidden="true" /></span><strong>W czym mogę pomóc?</strong><p>Zapytaj o składnię, działanie zapytania albo poproś o wskazówkę do zadania.</p>{lesson?.title && <small>Teraz: lekcja {lesson.order} · {lesson.title}</small>}</div>}

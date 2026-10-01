@@ -51,4 +51,21 @@ describe('pływający panel korepetytora AI', () => {
     await waitFor(() => expect(send).toHaveBeenCalled());
     expect(send.mock.calls[0][0]).toMatchObject({ provider: 'openai', apiKey: 'router-key', baseUrl: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-haiku-4.5' });
   });
+
+  it('udostępnia OpenRouter Free bez proszenia o klucz w przeglądarce', async () => {
+    const send = vi.fn().mockResolvedValue({ ok: true, reply: 'Podpowiedź.' });
+    const loadFreeModels = vi.fn().mockResolvedValue({ configured: true, models: [{ id: 'stealth/space-bunny-alpha', name: 'Space Bunny Alpha' }] });
+    render(<AiTutorPanel lesson={{ order: 1, title: 'SELECT', theory: '' }} task={{ prompt: 'Pokaż tytuły.' }} schema={[]} sendMessage={send} loadFreeModels={loadFreeModels} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Otwórz korepetytora AI' }));
+    fireEvent.change(screen.getByLabelText('Dostawca AI'), { target: { value: 'openrouter' } });
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Space Bunny Alpha' })).toBeInTheDocument());
+    expect(screen.queryByLabelText('Klucz API')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Darmowy model OpenRouter'), { target: { value: 'stealth/space-bunny-alpha' } });
+    fireEvent.change(screen.getByLabelText('Wiadomość do asystenta'), { target: { value: 'Podpowiedź?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Wyślij wiadomość' }));
+    await waitFor(() => expect(send).toHaveBeenCalled());
+    expect(send.mock.calls[0][0]).toMatchObject({ provider: 'openrouter' });
+    expect(send.mock.calls[0][0]).not.toHaveProperty('apiKey');
+    expect(send.mock.calls[0][0]).toMatchObject({ model: 'stealth/space-bunny-alpha' });
+  });
 });

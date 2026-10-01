@@ -16,3 +16,14 @@ export async function sendTutorMessage(payload, fetchImpl = fetch) {
   if (!response.ok || data?.ok !== true) throw new Error(data?.message || 'Nie udało się uzyskać odpowiedzi.');
   return data;
 }
+
+export async function getFreeOpenRouterModels(fetchImpl = fetch) {
+  let response;
+  try { response = await fetchImpl('/api/ai/free-models'); }
+  catch { throw new Error('Nie udało się połączyć z backendem aplikacji.'); }
+  let data;
+  try { data = await response.json(); }
+  catch { throw new Error('Backend zwrócił nieczytelną odpowiedź.'); }
+  if (!response.ok || data?.ok !== true) throw new Error(data?.message || 'Nie udało się pobrać darmowych modeli OpenRoutera.');
+  return data;
+}

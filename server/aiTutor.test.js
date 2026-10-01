@@ -1,10 +1,47 @@
 import { describe, expect, it, vi } from 'vitest';
-import { requestTutorReply } from './aiTutor.js';
+import { listFreeOpenRouterModels, requestTutorReply } from './aiTutor.js';
 
 const messages = [{ role: 'user', content: 'Pokaż mi wskazówkę.' }];
 const context = { lesson: { order: 1, title: 'SELECT i LIMIT', theory: 'SELECT wybiera kolumny.' }, task: { title: 'Tytuły', prompt: 'Wypisz tytuły.', hint: 'Wybierz kolumnę tytul.' }, schema: [{ name: 'ksiazki', columns: [{ name: 'tytul', type: 'TEXT' }] }] };
 
 describe('AI tutor provider connector', () => {
+  it('korzysta z serwerowego klucza OpenRouter i wymusza darmowy model po kontroli cennika', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'stealth/space-bunny-alpha', pricing: { prompt: '0', completion: '0' } }] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ choices: [{ message: { content: 'Oto wskazówka.' } }] }) });
+    const result = await requestTutorReply({ provider: 'openrouter', model: 'stealth/space-bunny-alpha', messages, context }, fetchImpl, undefined, { OPENROUTER_API_KEY: 'server-only-key' });
+    expect(result).toEqual({ ok: true, reply: 'Oto wskazówka.', provider: 'openrouter', model: 'stealth/space-bunny-alpha' });
+    expect(fetchImpl).toHaveBeenNthCalledWith(1, expect.stringContaining('/models'), expect.objectContaining({ method: 'GET' }));
+    const [url, options] = fetchImpl.mock.calls[1];
+    expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect(options.headers.authorization).toBe('Bearer server-only-key');
+    expect(options.body).toContain('stealth/space-bunny-alpha');
+  });
+
+  it('blokuje OpenRouter, jeśli model przestaje być całkowicie darmowy', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ data: [{ id: 'stealth/space-bunny-alpha', pricing: { prompt: '0.1', completion: '0' } }] }) }));
+    await expect(requestTutorReply({ provider: 'openrouter', model: 'stealth/space-bunny-alpha', messages, context }, fetchImpl, undefined, { OPENROUTER_API_KEY: 'server-only-key' })).rejects.toThrow(/nie jest już darmowy/i);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('odmawia trybu OpenRouter, jeśli sekret serwera nie jest skonfigurowany', async () => {
+    const fetchImpl = vi.fn();
+    await expect(requestTutorReply({ provider: 'openrouter', model: 'stealth/space-bunny-alpha', messages, context }, fetchImpl, undefined, {})).rejects.toThrow(/nie jest skonfigurowany/i);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('zwraca w selektorze tylko modele, których oba tokeny kosztują zero', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ data: [
+      { id: 'free/example', name: 'Free Example', pricing: { prompt: '0', completion: '0' } },
+      { id: 'paid/example', name: 'Paid Example', pricing: { prompt: '0', completion: '0.01' } },
+      { id: 'request-fee/example', name: 'Request Fee Example', pricing: { prompt: '0', completion: '0', request: '0.001' } },
+    ] }) }));
+    await expect(listFreeOpenRouterModels(fetchImpl, { OPENROUTER_API_KEY: 'server-only-key' })).resolves.toEqual({
+      configured: true,
+      models: [{ id: 'free/example', name: 'Free Example' }],
+    });
+  });
+
   it('wysyła wiadomość do Claude Messages API z kluczem tylko w nagłówku', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ content: [{ type: 'text', text: 'Użyj SELECT.' }] }) }));
     const result = await requestTutorReply({ provider: 'claude', apiKey: 'sk-ant-test-secret', messages, context }, fetchImpl);
