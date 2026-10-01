@@ -53,11 +53,15 @@ Backend działa wyłącznie lokalnie na `http://localhost:3001`.
 
 ## Korepetytor AI
 
-Pływający przycisk z ikoną robota otwiera panel rozmowy. Wybierz Claude Haiku albo OpenAI i wpisz własny klucz API. Klucz przechowujemy tylko w stanie aplikacji w pamięci karty: nie trafia do `localStorage` ani `sessionStorage`, a odświeżenie strony go usuwa. Przełączenie dostawcy lub przycisk czyszczenia również usuwa klucz i rozmowę.
+Pływający przycisk z ikoną robota otwiera panel rozmowy. Wybierz Claude Haiku albo OpenAI i wpisz własny klucz API. Klucz przechowujemy tylko w stanie aplikacji w pamięci karty: nie trafia do `localStorage` ani `sessionStorage`, a odświeżenie strony go usuwa. Przełączenie dostawcy lub przycisk czyszczenia również usuwa klucz i rozmowę. Dla OpenAI-compatible możesz opcjonalnie podać własny HTTPS base URL (np. `https://openrouter.ai/api/v1`) lub pełny adres `/chat/completions` oraz identyfikator modelu (np. `anthropic/claude-haiku-4.5`). Klucz jest przesyłany do wybranego adresu. Backend odrzuca HTTP, adresy lokalne/prywatne i domeny DNS wskazujące na prywatne adresy.
 
-Backend Express udostępnia `POST /api/ai/chat`; przy wdrożeniu Vercel ten sam endpoint obsługuje `api/ai/chat.js`. Backend przekazuje klucz w uwierzytelniającym nagłówku do wybranego dostawcy i nie zapisuje go. Model otrzymuje wyłącznie bieżący temat lekcji, treść zadania i podpowiedź oraz schemat tabel (nazwy, kolumny, typy i klucze). Nie wysyłamy rekordów, wyników zapytań, kluczy odpowiedzi ani danych połączenia MySQL. Wiadomości, zadanie i schemat są wysyłane do wybranego dostawcy AI; korzystanie może podlegać jego opłatom i zasadom prywatności.
+Backend Express udostępnia `POST /api/ai/chat`; przy wdrożeniu Vercel ten sam endpoint obsługuje `api/ai/chat.js`. Oficjalne OpenAI używa Responses API, a własny adres OpenAI-compatible używa Chat Completions. Backend przekazuje klucz w uwierzytelniającym nagłówku do wybranego dostawcy i nie zapisuje go. Model otrzymuje wyłącznie bieżący temat lekcji, treść zadania i podpowiedź oraz schemat tabel (nazwy, kolumny, typy i klucze). Nie wysyłamy rekordów, wyników zapytań, kluczy odpowiedzi ani danych połączenia MySQL. Wiadomości, zadanie i schemat są wysyłane do wybranego dostawcy AI; korzystanie może podlegać jego opłatom i zasadom prywatności.
 
 Opcjonalnie możesz wskazać modele przez `CLAUDE_HAIKU_MODEL` oraz `OPENAI_TUTOR_MODEL` w środowisku backendu. Domyślnie używane są Claude Haiku 4.5 i GPT-5 mini. Aby lokalnie korzystać z czatu, uruchom frontend i Express (`npm run dev:all`); klucz wpisuje się dopiero w panelu aplikacji.
+
+## Produkcja i Vercel
+
+`npm run build` tworzy statyczną aplikację React w `dist/`. W `vercel.json` ustawiono jawnie build Vite, katalog wyjściowy oraz funkcję czatu z limitem do 60 sekund. React renderuje aplikację przez pojedyncze `createRoot`; wyłączono developerski `StrictMode`, który celowo powtarza część efektów w trybie developerskim. Vite HMR/WebSocket działa wyłącznie na lokalnym serwerze developerskim; produkcyjny build i Vercel go nie uruchamiają.
 
 Po poprawnym połączeniu tryb MySQL pobiera również relacje z `information_schema.KEY_COLUMN_USAGE`. Relacje MySQL są prezentowane jako **Tylko odczyt** — aplikacja nie wykonuje zmian FK w zewnętrznej bazie.
 

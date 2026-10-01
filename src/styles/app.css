@@ -672,11 +672,12 @@ button { cursor: pointer; }
 .ai-tutor-heading small { color: #b5c8d5; font-size: .73rem; }
 .ai-tutor-icon-button { display: grid; width: 34px; height: 34px; place-items: center; color: #d7e5ec; background: transparent; border: 0; border-radius: 10px; }
 .ai-tutor-icon-button:hover { color: #fff; background: rgba(255,255,255,.12); }
-.ai-tutor-settings { flex: 0 0 auto; padding: 14px 17px 11px; background: #f7fafc; border-bottom: 1px solid #e7edf2; }
+.ai-tutor-settings { flex: 0 1 auto; min-height: 0; max-height: 43%; padding: 14px 17px 11px; overflow-y: auto; background: #f7fafc; border-bottom: 1px solid #e7edf2; }
 .ai-tutor-field { display: grid; gap: 5px; margin-bottom: 10px; color: #405669; font-size: .76rem; font-weight: 700; }
 .ai-tutor-field .form-control, .ai-tutor-field .form-select { min-height: 38px; font-size: .85rem; }
+.ai-tutor-endpoint-help { display: block; margin: -3px 0 10px; color: #718493; font-size: .66rem; line-height: 1.4; }
 .ai-tutor-privacy { margin: 2px 0 0; color: #687e90; font-size: .68rem; line-height: 1.45; }
-.ai-tutor-messages { display: flex; flex: 1 1 auto; flex-direction: column; gap: 12px; min-height: 100px; padding: 15px; overflow-y: auto; background: #f4f7f9; }
+.ai-tutor-messages { display: flex; flex: 1 1 0; flex-direction: column; gap: 12px; min-height: 0; padding: 15px; overflow-y: auto; background: #f4f7f9; }
 .ai-tutor-welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 190px; margin: auto 0; color: #203d52; text-align: center; }
 .ai-tutor-welcome-icon { width: 48px; height: 48px; margin-bottom: 12px; color: #087c82; background: #e0f5f3; border: 0; border-radius: 16px; }
 .ai-tutor-welcome strong { font-size: .95rem; }

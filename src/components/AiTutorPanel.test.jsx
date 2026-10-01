@@ -28,4 +28,27 @@ describe('pływający panel korepetytora AI', () => {
     expect(sessionStorage.getItem('temporary-secret')).toBeNull();
     expect(localStorage.getItem('temporary-secret')).toBeNull();
   });
+
+  it('pokazuje konfigurację własnego endpointu i modelu dla OpenAI-compatible usług', () => {
+    render(<AiTutorPanel lesson={{ order: 1, title: 'SELECT', theory: '' }} task={{ prompt: 'Pokaż tytuły.' }} schema={[]} sendMessage={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Otwórz korepetytora AI' }));
+    expect(screen.queryByLabelText('Własny endpoint OpenAI-compatible')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Dostawca AI'), { target: { value: 'openai' } });
+    expect(screen.getByLabelText('Własny endpoint OpenAI-compatible')).toBeInTheDocument();
+    expect(screen.getByLabelText('Model OpenAI-compatible')).toBeInTheDocument();
+  });
+
+  it('przekazuje wybrany OpenAI-compatible URL i identyfikator modelu do backendu', async () => {
+    const send = vi.fn().mockResolvedValue({ ok: true, reply: 'Odpowiedź.' });
+    render(<AiTutorPanel lesson={{ order: 1, title: 'SELECT', theory: '' }} task={{ prompt: 'Pokaż tytuły.' }} schema={[]} sendMessage={send} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Otwórz korepetytora AI' }));
+    fireEvent.change(screen.getByLabelText('Dostawca AI'), { target: { value: 'openai' } });
+    fireEvent.change(screen.getByLabelText('Klucz API'), { target: { value: 'router-key' } });
+    fireEvent.change(screen.getByLabelText('Własny endpoint OpenAI-compatible'), { target: { value: 'https://openrouter.ai/api/v1' } });
+    fireEvent.change(screen.getByLabelText('Model OpenAI-compatible'), { target: { value: 'anthropic/claude-haiku-4.5' } });
+    fireEvent.change(screen.getByLabelText('Wiadomość do asystenta'), { target: { value: 'Podpowiedź?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Wyślij wiadomość' }));
+    await waitFor(() => expect(send).toHaveBeenCalled());
+    expect(send.mock.calls[0][0]).toMatchObject({ provider: 'openai', apiKey: 'router-key', baseUrl: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-haiku-4.5' });
+  });
 });

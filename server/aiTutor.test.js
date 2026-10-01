@@ -26,6 +26,34 @@ describe('AI tutor provider connector', () => {
     expect(options.body).not.toContain('sk-test-secret');
   });
 
+  it('obsługuje własny endpoint OpenAI-compatible i model, np. OpenRouter Chat Completions', async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'Wskazówka z routera.' } }] }) }));
+    const lookupImpl = vi.fn(async () => [{ address: '104.18.7.15', family: 4 }]);
+    const result = await requestTutorReply({ provider: 'openai', apiKey: 'router-secret', baseUrl: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-haiku-4.5', messages, context }, fetchImpl, lookupImpl);
+    expect(result).toMatchObject({ ok: true, reply: 'Wskazówka z routera.', provider: 'openai', model: 'anthropic/claude-haiku-4.5' });
+    const [url, options] = fetchImpl.mock.calls[0];
+    expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect(options.headers.authorization).toBe('Bearer router-secret');
+    expect(JSON.parse(options.body)).toMatchObject({ model: 'anthropic/claude-haiku-4.5', messages: [{ role: 'system' }, ...messages] });
+    expect(lookupImpl).toHaveBeenCalledWith('openrouter.ai', { all: true, verbatim: true });
+  });
+
+  it('blokuje niebezpieczne custom endpointy przed wysłaniem klucza API', async () => {
+    const fetchImpl = vi.fn();
+    const privateLookup = vi.fn(async () => [{ address: '10.0.0.8', family: 4 }]);
+    await expect(requestTutorReply({ provider: 'openai', apiKey: 'secret', baseUrl: 'https://api.example.net/v1', messages, context }, fetchImpl, privateLookup)).rejects.toThrow(/publiczny serwer/i);
+    await expect(requestTutorReply({ provider: 'openai', apiKey: 'secret', baseUrl: 'http://example.com/v1', messages, context }, fetchImpl, privateLookup)).rejects.toThrow(/publicznym adresem HTTPS/i);
+    await expect(requestTutorReply({ provider: 'openai', apiKey: 'secret', baseUrl: 'https://127.0.0.1/v1', messages, context }, fetchImpl, privateLookup)).rejects.toThrow(/publicznym adresem HTTPS/i);
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(privateLookup).toHaveBeenCalledTimes(1);
+  });
+
+  it('odrzuca niepoprawny typ custom URL bez wysyłania żądania', async () => {
+    const fetchImpl = vi.fn();
+    await expect(requestTutorReply({ provider: 'openai', apiKey: 'secret', baseUrl: null, messages, context }, fetchImpl)).rejects.toThrow(/HTTPS/i);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it('przekazuje wyłącznie jawny kontekst lekcji, zadania i schematu; odrzuca nadmiarowe wiadomości', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ content: [{ type: 'text', text: 'Pomoc.' }] }) }));
     await requestTutorReply({ provider: 'claude', apiKey: 'secret', messages, context }, fetchImpl);

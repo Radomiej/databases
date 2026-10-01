@@ -22,6 +22,8 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState('claude');
   const [apiKey, setApiKey] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
+  const [model, setModel] = useState('');
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState([]);
   const [pending, setPending] = useState(false);
@@ -52,7 +54,7 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
     setError('');
     setPending(true);
     try {
-      const response = await sendMessage({ provider, apiKey, messages: nextMessages, context });
+      const response = await sendMessage({ provider, apiKey, baseUrl: provider === 'openai' ? baseUrl.trim() : '', model: provider === 'openai' ? model.trim() : '', messages: nextMessages, context });
       setMessages([...nextMessages, { role: 'assistant', content: response.reply }].slice(-16));
     } catch (failure) {
       setMessages((current) => [...current, { role: 'user', content }].slice(-16));
@@ -64,6 +66,8 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
   const switchProvider = (event) => {
     setProvider(event.target.value);
     setApiKey('');
+    setBaseUrl('');
+    setModel('');
     setMessages([]);
     setError('');
   };
@@ -71,6 +75,8 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
   const clearConversation = () => {
     setMessages([]);
     setApiKey('');
+    setBaseUrl('');
+    setModel('');
     setDraft('');
     setError('');
   };
@@ -85,7 +91,12 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
       <div className="ai-tutor-settings">
         <label className="ai-tutor-field"><span>Dostawca AI</span><select className="form-select" value={provider} onChange={switchProvider}><option value="claude">Claude Haiku</option><option value="openai">OpenAI</option></select></label>
         <label className="ai-tutor-field"><span>Klucz API</span><input className="form-control" type="password" autoComplete="off" spellCheck="false" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider === 'claude' ? 'sk-ant-…' : 'sk-…'} /></label>
-        <p className="ai-tutor-privacy">Klucz pozostaje w pamięci tej karty. Pytanie oraz bieżąca lekcja, zadanie i schemat bazy trafią do wybranego dostawcy AI. Nie wysyłamy wyników ani rekordów tabel.</p>
+        {provider === 'openai' && <>
+          <label className="ai-tutor-field"><span>Własny endpoint OpenAI-compatible</span><input className="form-control" type="url" autoComplete="off" spellCheck="false" maxLength="2048" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://openrouter.ai/api/v1" /></label>
+          <label className="ai-tutor-field"><span>Model OpenAI-compatible</span><input className="form-control" type="text" autoComplete="off" maxLength="160" value={model} onChange={(event) => setModel(event.target.value)} placeholder="np. anthropic/claude-haiku-4.5" /></label>
+          <small className="ai-tutor-endpoint-help">Puste pole używa oficjalnego OpenAI. Własny adres: baza API (np. …/api/v1) albo pełny endpoint …/chat/completions. Model wpisz zgodnie z ofertą dostawcy.</small>
+        </>}
+        <p className="ai-tutor-privacy">Klucz pozostaje w pamięci tej karty. Pytanie oraz bieżąca lekcja, zadanie i schemat bazy trafią do {provider === 'openai' && baseUrl.trim() ? 'wskazanego endpointu' : 'wybranego dostawcy AI'}. Nie wysyłamy wyników ani rekordów tabel.</p>
       </div>
       <div className="ai-tutor-messages" ref={messageListRef} aria-live="polite" aria-label="Rozmowa">
         {messages.length === 0 && <div className="ai-tutor-welcome"><span className="ai-tutor-welcome-icon"><i className="bi bi-chat-square-text" aria-hidden="true" /></span><strong>W czym mogę pomóc?</strong><p>Zapytaj o składnię, działanie zapytania albo poproś o wskazówkę do zadania.</p>{lesson?.title && <small>Teraz: lekcja {lesson.order} · {lesson.title}</small>}</div>}
