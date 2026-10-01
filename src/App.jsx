@@ -12,6 +12,8 @@ import Sidebar from './components/Sidebar.jsx';
 import SqlEditor from './components/SqlEditor.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import TableBuilderModal from './components/TableBuilderModal.jsx';
+import TrainingSandbox from './components/TrainingSandbox.jsx';
+import TrainingWizardModal from './components/TrainingWizardModal.jsx';
 import appPackage from '../package.json';
 import { DATASETS, getDataset } from './data/datasets.js';
 import { COURSE_LESSONS, getLesson } from './data/lessons.js';
@@ -28,6 +30,14 @@ import { getTaskSqlDraft, getTaskSqlDraftKey } from './services/taskSqlDrafts.js
 const DEFAULT_CONNECTION = { host: '127.0.0.1', port: 3306, database: 'inf03_lab', user: 'root', password: '' };
 
 function App() {
+  const [trainingSession, setTrainingSession] = useState(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('sql-lab.training-session'));
+      return saved?.version === 1 && saved.dataset?.tables?.length && saved.tasks?.length && saved.options ? saved : null;
+    } catch { return null; }
+  });
+  const [trainingWizardOpen, setTrainingWizardOpen] = useState(false);
+  const [trainingStorageError, setTrainingStorageError] = useState(false);
   const [mode, setMode] = useState('sqlite');
   const [datasetId, setDatasetId] = useState('biblioteka');
   const [lessonId, setLessonId] = useState('select-limit');
@@ -65,6 +75,14 @@ function App() {
   const savedRelationships = relationshipOverrides?.[datasetId];
   const sqliteRelationships = useMemo(() => (Array.isArray(savedRelationships) ? savedRelationships : dataset.relationships), [dataset.relationships, savedRelationships]);
   const sqlite = useSqliteDatabase(datasetId, customTablesForDataset, sqliteRelationships);
+
+  useEffect(() => {
+    try {
+      if (trainingSession) sessionStorage.setItem('sql-lab.training-session', JSON.stringify(trainingSession));
+      else sessionStorage.removeItem('sql-lab.training-session');
+      setTrainingStorageError(false);
+    } catch { setTrainingStorageError(true); }
+  }, [trainingSession]);
 
   useEffect(() => {
     if (mode !== 'mysql') {
@@ -274,6 +292,8 @@ function App() {
   };
 
   const handleFactoryReset = async () => {
+    setTrainingSession(null);
+    try { sessionStorage.removeItem('sql-lab.training-work'); } catch { /* optional storage */ }
     const historyCleared = await clearHistory();
     setMode('sqlite');
     setDatasetId('biblioteka');
@@ -402,7 +422,8 @@ function App() {
   );
 
   return (
-    <AppShell
+    <>
+    {trainingSession ? <TrainingSandbox key={JSON.stringify(trainingSession.options)} session={trainingSession} onBack={() => setTrainingSession(null)} onNew={() => setTrainingWizardOpen(true)} /> : <AppShell
       sidebar={sidebar}
       sidebarOpen={sidebarOpen}
       onSidebarClose={(nextValue) => setSidebarOpen(typeof nextValue === 'boolean' ? nextValue : false)}
@@ -410,7 +431,7 @@ function App() {
     >
       <div className="main-toolbar">
         <div className="toolbar-dataset">{dataset.name}<span className="toolbar-separator">/</span> SQL practice</div>
-        <div className="toolbar-engine"><span className="toolbar-engine-dot" />{mode === 'sqlite' ? 'SQLite lokalnie' : 'MySQL connector'}</div>
+        <div className="training-toolbar-actions"><button type="button" className="btn btn-training" onClick={() => setTrainingWizardOpen(true)}><i className="bi bi-lightning-charge" aria-hidden="true" /> Trening SQL</button><div className="toolbar-engine"><span className="toolbar-engine-dot" />{mode === 'sqlite' ? 'SQLite lokalnie' : 'MySQL connector'}</div></div>
       </div>
       {mode === 'mysql' && <ConnectionPanel connection={connection} onChange={handleConnectionChange} onTest={handleTestConnection} status={mysqlStatus.state} statusMessage={mysqlStatus.message} serverVersion={mysqlStatus.serverVersion} rememberConnection={rememberConnection} onRememberChange={handleRememberConnectionChange} allowMutations={allowMutations} mutationsAvailable={mysqlCapabilities.mutationsAvailable} onAllowMutationsChange={setAllowMutations} allowSchemaMutations={allowSchemaMutations} schemaMutationsAvailable={mysqlCapabilities.schemaMutationsAvailable} onAllowSchemaMutationsChange={setAllowSchemaMutations} />}
       <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={mode === 'sqlite' ? sqlite.status : mysqlStatus.state} mode={mode} activeTaskId={activeTask?.id} taskProgress={taskProgress} onTaskChange={handleTaskChange} />
@@ -435,7 +456,10 @@ function App() {
       <DataPreviewModal open={Boolean(tablePreview.table)} table={tablePreview.table} databaseLabel={mode === 'sqlite' ? dataset.name : connection.database || 'MySQL'} mode={mode} result={tablePreview.result} loading={tablePreview.loading} onClose={handleCloseTablePreview} onRefresh={() => tablePreview.table && handlePreviewTable(tablePreview.table.name)} />
       <SettingsModal open={isSettingsOpen} version={appPackage.version} mode={mode} datasetLabel={dataset.name} onClose={() => setIsSettingsOpen(false)} onResetDatabase={handleResetActiveDatabase} onFactoryReset={handleFactoryReset} />
       <HelpModal open={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-    </AppShell>
+    </AppShell>}
+    {trainingStorageError && trainingSession && <div className="training-storage-warning" role="alert">Nie można zapisać zestawu w sesji przeglądarki. Po odświeżeniu trening może zostać utracony.</div>}
+    <TrainingWizardModal open={trainingWizardOpen} onClose={() => setTrainingWizardOpen(false)} onGenerate={(session) => { setTrainingSession(session); setTrainingWizardOpen(false); }} />
+    </>
   );
 }
 

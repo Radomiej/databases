@@ -36,7 +36,7 @@ function TableOptionsMenu({ tableName, onPreviewTable, previewDisabled }) {
   );
 }
 
-function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite', databaseLabel, onAddTable, onPreviewTable, previewDisabled = false, onEditRelationships, relationshipsReadOnly = false }) {
+function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite', databaseLabel, onAddTable, onPreviewTable, previewDisabled = false, onEditRelationships, relationshipsReadOnly = false, allowTableCreation = true }) {
   const [activeTab, setActiveTab] = useState('tables');
   const [search, setSearch] = useState('');
   const availableTables = schema.length > 0 ? schema : mode === 'sqlite' ? dataset.tables : [];
@@ -65,7 +65,7 @@ function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite'
               <label className="visually-hidden" htmlFor="schema-search">Szukaj tabeli</label>
               <input id="schema-search" className="schema-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Szukaj tabeli..." />
             </div>
-            {mode === 'sqlite' && <button type="button" className="schema-add-button" onClick={onAddTable} title="Dodaj własną tabelę"><i className="bi bi-plus-lg" aria-hidden="true" /></button>}
+            {mode === 'sqlite' && allowTableCreation && <button type="button" className="schema-add-button" onClick={onAddTable} title="Dodaj własną tabelę"><i className="bi bi-plus-lg" aria-hidden="true" /></button>}
           </div>
           <div className="schema-table-list">
             {visibleTables.map((tableItem) => (

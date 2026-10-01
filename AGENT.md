@@ -15,6 +15,8 @@ Przy dodawaniu lub zmianie lekcji:
 
 ## Język dydaktyczny
 
+Generator treningu podlega tej samej zasadzie progresji: poziom trudności nie pozwala wprowadzać konstrukcji z przyszłych lekcji. Nazwy wymaganych kolumn i aliasów muszą być jawne. Generowane dane powinny sprawiać, że kluczowy warunek zadania rzeczywiście zmienia wynik (np. pominięcie HAVING nie może zaliczać zadania). Zestaw nie powinien zawierać identycznych poleceń. LIMIT bez ORDER BY nie może wymagać konkretnego, arbitralnego podzbioru wierszy.
+
 Treści lekcji i zadań powinny być napisane naturalnym, poprawnym językiem polskim. Nazwy czynności muszą odpowiadać temu, co rzeczywiście robi uczeń i co zwraca zapytanie. Używaj określenia „zadanie pokazowe” dla pierwszego przykładu, a „zadanie samodzielne” dla kolejnych. Unikaj kalk językowych, nieprecyzyjnych opisów oraz sformułowań sugerujących kolumny lub dane, których wynik nie zawiera.
 
 ## Lekcje struktury bazy

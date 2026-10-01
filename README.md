@@ -80,6 +80,16 @@ Domyślnie connector pozwala na `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN` i odczyt
 4. W aplikacji wybierz `MySQL — connector`.
 5. Ustaw bazę `inf03_lab`, kliknij `Sprawdź połączenie`, a następnie wykonaj `SHOW TABLES;`.
 
+## Trening SQL — generator zadań
+
+Przycisk **Trening SQL** u góry aplikacji otwiera kreator samodzielnego treningu. Wybierz jedną lekcję lub zakres lekcji 1–8, poziom trudności, 5 albo 10 zadań, temat bazy (sklep, klub sportowy, wypożyczalnia), 12/24/48 wierszy w tabeli i dostępność podpowiedzi. Dla zakresu dłuższego niż pięć lekcji wymagane jest 10 zadań, aby każda wybrana lekcja miała swoje ćwiczenie.
+
+Generator tworzy oddzielną bazę SQLite z dwiema tabelami i losowymi danymi. Nie zmienia baz kursu, własnych tabel ani MySQL. Temat zmienia nazwy tabel i dane, a zakres ogranicza składnię zadań do bieżącego oraz wcześniejszego materiału. JOIN i zadania DDL nie są jeszcze objęte generatorem.
+
+Uczeń zaczyna z pustym edytorem, korzysta z checklisty i podglądu danych przez menu `⋮`, a przycisk **Sprawdź** porównuje wynik z odpowiedzią referencyjną. Nie ma przycisku pokazującego rozwiązanie. Nazwy kolumn i wymagane aliasy są jawne w treści zadania. Przy `LIMIT` bez sortowania oceniany jest dowolny prawidłowy podzbiór wymaganej wielkości; zadania z sortowaniem wymagają wskazanej kolejności. Zapytania są ograniczone do jednego `SELECT`, a baza treningowa jest tylko do odczytu.
+
+Opcjonalny **kod zestawu** wraz z identycznymi parametrami odtwarza ten sam zestaw dla całej klasy. Pusty kod oznacza nowe losowanie. Aktywny zestaw, szkice i zaliczenia są przechowywane w `sessionStorage` tej karty i pozostają po odświeżeniu (nie są kontem ucznia ani trwałym dziennikiem ocen). **Nowy zestaw** otwiera ponownie kreator; anulowanie nie usuwa aktualnego treningu. **Wróć do kursu** kończy widok treningu, zachowując bazę i zapytanie kursu w pamięci aplikacji.
+
 ## Testy i build
 
 ```powershell
@@ -87,7 +97,7 @@ npm test
 npm run build
 ```
 
-Testy obejmują silnik SQLite, wszystkie rozwiązania lekcji, walidator wyników, kreator tabel, politykę connectora i klienta API.
+Testy obejmują silnik SQLite, wszystkie rozwiązania lekcji, walidator wyników, kreator tabel, politykę connectora, klienta API oraz generator treningu (powtarzalność, progresję materiału, różnorodność, faktyczne filtrowanie HAVING, ocenę LIMIT i ochronę danych).
 
 ## Zawartość
 

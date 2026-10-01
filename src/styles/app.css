@@ -131,7 +131,46 @@ button { cursor: pointer; }
 .app-content-grid { display: grid; grid-template-columns: minmax(0, 1fr) 350px; min-height: 100vh; }
 .app-main-content { min-width: 0; padding: 0 38px 52px; background: #fff; }
 .app-inspector { min-width: 0; padding: 0 23px 40px; background: #f8fafc; border-left: 1px solid var(--line); }
-.main-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 61px; border-bottom: 1px solid var(--line); }
+.main-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 61px; border-bottom: 1px solid var(--line); gap: 12px; flex-wrap: wrap; padding-block: 8px; }
+.training-toolbar-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.btn-training { display: inline-flex; align-items: center; gap: 7px; background: #e8f6f5; color: #117d85; border: 1px solid #a8deda; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.btn-training:hover { background: #d4efed; border-color: #69bdb7; color: #075e65; }
+.training-wizard-form { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.training-wizard fieldset { border: 0; padding: 0; min-width: 0; }
+.training-wizard legend, .training-section-title { font-size: 15px; font-weight: 700; margin: 20px 0 12px; }
+.training-info { border: 1px solid #bfe0db; background: #f1faf8; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.6; color: #27675f; }
+.training-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.training-fields label, .training-wizard label[for="training-seed"] { display: grid; gap: 7px; font-size: 13px; font-weight: 600; min-width: 0; }
+.training-wizard .form-select, .training-wizard .form-control { font-size: 13px; }
+.training-scope { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 16px; }
+.training-scope label, .training-check { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.training-check { margin-top: 16px; }
+.training-caption { color: #5b7187; font-size: 12px; line-height: 1.6; margin: 10px 0 0; }
+.training-progress { margin: 24px 0 18px; display: grid; gap: 8px; font-size: 13px; }
+.training-progress progress { width: 100%; height: 8px; accent-color: #169da3; }
+.training-progress small, .training-seed small { color: #a7bdcd; line-height: 1.6; }
+.training-task-list { display: grid; gap: 6px; }
+.training-task { display: flex; gap: 10px; text-align: left; align-items: center; border: 1px solid transparent; border-radius: 8px; padding: 12px 10px; background: transparent; color: #c9dce9; }
+.training-task:hover { background: #183548; }
+.training-task.is-active { background: #e8f6f5; border-color: #b9dfdc; color: #096e78; }
+.training-task .bi-check-circle-fill { color: #1e9972; }
+.training-task span { display: grid; gap: 4px; }
+.training-task strong { font-size: 13px; }
+.training-task small { font-size: 11px; line-height: 1.5; }
+.training-seed { display: grid; gap: 8px; margin-top: 24px; padding: 14px; border: 1px solid #355366; border-radius: 8px; font-size: 12px; color: #c9dce9; }
+.training-seed code { overflow-wrap: anywhere; color: #94e4de; }
+.training-task-card { border: 1px solid #d9e5ed; border-radius: 12px; background: #fff; padding: 24px; margin-block: 20px; }
+.training-task-kicker { color: #14888d; font-weight: 700; font-size: 12px; margin-bottom: 12px; }
+.training-task-card h1 { font-size: 23px; line-height: 1.4; color: #193951; margin: 0 0 16px; }
+.training-task-card p { font-size: 15px; line-height: 1.8; color: #38536b; }
+.training-expected { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; background: #f5f8fc; padding: 12px; border-radius: 8px; }
+.training-expected code { color: #147887; }
+.training-task-card details { margin-block: 16px; border: 1px solid #dce7ee; border-radius: 8px; padding: 12px; }
+.training-task-card summary { cursor: pointer; color: #267b87; font-size: 13px; font-weight: 600; }
+.training-task-card details p { font-size: 13px; margin: 12px 0 0; }
+.training-task-card > small { display: block; color: #607890; font-size: 12px; line-height: 1.7; margin-top: 16px; }
+.training-storage-warning { position: fixed; bottom: 12px; left: 12px; right: 12px; padding: 12px; z-index: 1200; background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; border-radius: 8px; }
+@media (max-width: 600px) { .training-fields { grid-template-columns: 1fr; } .training-task-card { padding: 18px; } .training-task-card h1 { font-size: 20px; } }
 .toolbar-dataset { color: #7890a5; font-size: 0.73rem; font-weight: 700; }
 .toolbar-separator { padding: 0 7px; color: #bdc9d4; }
 .toolbar-engine { display: flex; gap: 7px; align-items: center; color: #516779; font-size: 0.71rem; font-weight: 650; }

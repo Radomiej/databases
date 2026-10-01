@@ -13,7 +13,7 @@ function formatCell(value) {
   return String(value);
 }
 
-function ResultsPanel({ result, history = [], onHistorySelect }) {
+function ResultsPanel({ result, history = [], onHistorySelect, showHistory = true }) {
   const [activeTab, setActiveTab] = useState('result');
 
   const hasRows = Boolean(result?.ok && result.rows?.length);
@@ -34,12 +34,12 @@ function ResultsPanel({ result, history = [], onHistorySelect }) {
         {result?.ok && <div className="results-meta">{Number(result.durationMs ?? 0).toFixed(2)} ms</div>}
       </div>
 
-      <div className="results-tabs" role="tablist" aria-label="Wynik i historia">
+      {showHistory && <div className="results-tabs" role="tablist" aria-label="Wynik i historia">
         <button type="button" className={`results-tab ${activeTab === 'result' ? 'is-active' : ''}`} role="tab" aria-selected={activeTab === 'result'} onClick={() => setActiveTab('result')}>Wynik</button>
         <button type="button" className={`results-tab ${activeTab === 'history' ? 'is-active' : ''}`} role="tab" aria-selected={activeTab === 'history'} onClick={() => setActiveTab('history')}>Historia <span>{history.length}</span></button>
-      </div>
+      </div>}
 
-      {activeTab === 'history' ? (
+      {showHistory && activeTab === 'history' ? (
         <HistoryPanel history={history} onHistorySelect={onHistorySelect} />
       ) : (
         <div className="results-body">

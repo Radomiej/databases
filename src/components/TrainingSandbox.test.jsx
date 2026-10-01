@@ -1,0 +1,30 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { expect, it } from 'vitest';
+import { createRequire } from 'node:module';
+import initSqlJs from 'sql.js';
+import { generateTraining } from '../services/trainingGenerator.js';
+import { createSqliteDatabase } from '../services/sqliteEngine.js';
+import TrainingSandbox from './TrainingSandbox.jsx';
+
+it('samodzielny sandbox zalicza zadanie, zachowuje szkic po odświeżeniu i pokazuje podgląd danych', async () => {
+  const wasm = createRequire(import.meta.url).resolve('sql.js/dist/sql-wasm.wasm');
+  const session = await generateTraining({ start: 1, end: 1, count: 5, seed: 'TEST' }, initSqlJs, () => wasm);
+  const createDatabase = (dataset) => createSqliteDatabase(dataset, initSqlJs, () => wasm);
+  const props = { session, createDatabase, onBack: () => {}, onNew: () => {} };
+  sessionStorage.clear();
+  const { unmount } = render(<TrainingSandbox {...props} />);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Sprawdź' })).toBeEnabled());
+  expect(screen.queryByRole('button', { name: 'Rozwiązanie' })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Zapytanie SQL')).toHaveValue('');
+  fireEvent.change(screen.getByLabelText('Zapytanie SQL'), { target: { value: session.tasks[0].solution } });
+  fireEvent.click(screen.getByRole('button', { name: 'Sprawdź' }));
+  expect(await screen.findByText('Zadanie zaliczone')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: `Opcje tabeli ${session.tasks[0].table}` }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Podgląd danych' }));
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  unmount();
+  render(<TrainingSandbox {...props} />);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Sprawdź' })).toBeEnabled());
+  expect(screen.getByLabelText('Zapytanie SQL')).toHaveValue(session.tasks[0].solution);
+  expect(screen.getByText('1 / 5 zaliczonych')).toBeInTheDocument();
+});
