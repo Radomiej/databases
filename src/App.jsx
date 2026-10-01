@@ -14,6 +14,7 @@ import SettingsModal from './components/SettingsModal.jsx';
 import TableBuilderModal from './components/TableBuilderModal.jsx';
 import TrainingSandbox from './components/TrainingSandbox.jsx';
 import TrainingWizardModal from './components/TrainingWizardModal.jsx';
+import AiTutorPanel from './components/AiTutorPanel.jsx';
 import appPackage from '../package.json';
 import { DATASETS, getDataset } from './data/datasets.js';
 import { COURSE_LESSONS, getLesson } from './data/lessons.js';
@@ -38,6 +39,7 @@ function App() {
   });
   const [trainingWizardOpen, setTrainingWizardOpen] = useState(false);
   const [trainingStorageError, setTrainingStorageError] = useState(false);
+  const [trainingTutorContext, setTrainingTutorContext] = useState(null);
   const [mode, setMode] = useState('sqlite');
   const [datasetId, setDatasetId] = useState('biblioteka');
   const [lessonId, setLessonId] = useState('select-limit');
@@ -75,6 +77,11 @@ function App() {
   const savedRelationships = relationshipOverrides?.[datasetId];
   const sqliteRelationships = useMemo(() => (Array.isArray(savedRelationships) ? savedRelationships : dataset.relationships), [dataset.relationships, savedRelationships]);
   const sqlite = useSqliteDatabase(datasetId, customTablesForDataset, sqliteRelationships);
+  const tutorContext = trainingSession ? trainingTutorContext : {
+    lesson: { order: lesson.order, title: lesson.title, theory: lesson.theory, syntax: lesson.syntax },
+    task: { title: activeTask?.title, prompt: activeTask?.prompt ?? lesson.task, hint: activeTask?.hint ?? lesson.hint },
+    schema: mode === 'sqlite' ? sqlite.schema : mysqlSchema,
+  };
 
   useEffect(() => {
     try {
@@ -423,7 +430,7 @@ function App() {
 
   return (
     <>
-    {trainingSession ? <TrainingSandbox key={JSON.stringify(trainingSession.options)} session={trainingSession} onBack={() => setTrainingSession(null)} onNew={() => setTrainingWizardOpen(true)} /> : <AppShell
+    {trainingSession ? <TrainingSandbox key={JSON.stringify(trainingSession.options)} session={trainingSession} onBack={() => setTrainingSession(null)} onNew={() => setTrainingWizardOpen(true)} onTutorContextChange={setTrainingTutorContext} /> : <AppShell
       sidebar={sidebar}
       sidebarOpen={sidebarOpen}
       onSidebarClose={(nextValue) => setSidebarOpen(typeof nextValue === 'boolean' ? nextValue : false)}
@@ -459,6 +466,7 @@ function App() {
     </AppShell>}
     {trainingStorageError && trainingSession && <div className="training-storage-warning" role="alert">Nie można zapisać zestawu w sesji przeglądarki. Po odświeżeniu trening może zostać utracony.</div>}
     <TrainingWizardModal open={trainingWizardOpen} onClose={() => setTrainingWizardOpen(false)} onGenerate={(session) => { setTrainingSession(session); setTrainingWizardOpen(false); }} />
+    <AiTutorPanel lesson={tutorContext?.lesson} task={tutorContext?.task} schema={tutorContext?.schema ?? []} />
     </>
   );
 }
