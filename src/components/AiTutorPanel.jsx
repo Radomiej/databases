@@ -108,7 +108,15 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
         <div className="ai-tutor-heading"><span className="ai-tutor-avatar"><i className="bi bi-robot" aria-hidden="true" /></span><div><h2>Korepetytor AI</h2><small>Pomoc do bieżącej lekcji</small></div></div>
         <div className="ai-tutor-header-actions"><button type="button" className="ai-tutor-icon-button" aria-label="Zapomnij klucz i wyczyść rozmowę" title="Zapomnij klucz i wyczyść rozmowę" onClick={clearConversation}><i className="bi bi-trash3" aria-hidden="true" /></button><button type="button" className="ai-tutor-icon-button" aria-label="Zamknij panel korepetytora" onClick={() => setOpen(false)}><i className="bi bi-x-lg" aria-hidden="true" /></button></div>
       </header>
-      <div className="ai-tutor-settings">
+      <details className="ai-tutor-settings">
+        <summary className="ai-tutor-settings-toggle">
+          <span><i className="bi bi-sliders" aria-hidden="true" /> Ustawienia AI</span>
+          <span className="ai-tutor-settings-summary">
+            {provider === 'openrouter' ? freeModels.find((item) => item.id === model)?.name || 'OpenRouter Free' : provider === 'openai' ? (baseUrl.trim() ? 'OpenAI-compatible' : 'OpenAI') : 'Claude Haiku'}
+            <i className="bi bi-chevron-down" aria-hidden="true" />
+          </span>
+        </summary>
+        <div className="ai-tutor-settings-content">
         <label className="ai-tutor-field"><span>Dostawca AI</span><select className="form-select" value={provider} onChange={switchProvider}><option value="claude">Claude Haiku</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter Free</option></select></label>
         {provider !== 'openrouter' && <label className="ai-tutor-field"><span>Klucz API</span><input className="form-control" type="password" autoComplete="off" spellCheck="false" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={provider === 'claude' ? 'sk-ant-…' : 'sk-…'} /></label>}
         {provider === 'openrouter' && <>
@@ -124,7 +132,8 @@ export default function AiTutorPanel({ lesson, task, schema, sendMessage = sendT
           <small className="ai-tutor-endpoint-help">Puste pole używa oficjalnego OpenAI. Własny adres: baza API (np. …/api/v1) albo pełny endpoint …/chat/completions. Model wpisz zgodnie z ofertą dostawcy.</small>
         </>}
         <p className="ai-tutor-privacy">{provider === 'openrouter' ? 'Klucz OpenRoutera jest przechowywany tylko w zmiennej środowiskowej backendu. OpenRouter i operator modelu otrzymają pytanie oraz kontekst; operator może je przechowywać.' : 'Klucz pozostaje w pamięci tej karty.'} Pytanie oraz bieżąca lekcja, zadanie i schemat bazy trafią do {provider === 'openai' && baseUrl.trim() ? 'wskazanego endpointu' : 'wybranego dostawcy AI'}. Nie wysyłamy wyników ani rekordów tabel.</p>
-      </div>
+        </div>
+      </details>
       <div className="ai-tutor-messages" ref={messageListRef} aria-live="polite" aria-label="Rozmowa">
         {messages.length === 0 && <div className="ai-tutor-welcome"><span className="ai-tutor-welcome-icon"><i className="bi bi-chat-square-text" aria-hidden="true" /></span><strong>W czym mogę pomóc?</strong><p>Zapytaj o składnię, działanie zapytania albo poproś o wskazówkę do zadania.</p>{lesson?.title && <small>Teraz: lekcja {lesson.order} · {lesson.title}</small>}</div>}
         {messages.map((message, index) => <div className={`ai-tutor-message is-${message.role}`} key={`${index}-${message.content.slice(0, 16)}`}><span>{message.role === 'user' ? 'Ty' : 'Korepetytor'}</span><p>{message.content}</p></div>)}
