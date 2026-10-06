@@ -31,7 +31,7 @@ describe('LessonPanel', () => {
     expect(screen.getByText('Pokaż tytuły książek.')).toBeInTheDocument();
     expect(screen.getByText('Samodzielnie 1')).toBeInTheDocument();
     expect(screen.getByText('Samodzielnie 2')).toBeInTheDocument();
-    expect(document.querySelector('.bi-filetype-html')).toBeInTheDocument();
+    expect(document.querySelector('.bi-list-check')).toBeInTheDocument();
   });
 
   it('selects a later task without presenting its solution', () => {

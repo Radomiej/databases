@@ -55,21 +55,12 @@ function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite', activeT
   return (
     <section className="lesson-overview">
       <div className="breadcrumb-line">
-        <span>Bazy danych</span>
-        <i className="bi bi-chevron-right" aria-hidden="true" />
-        <span>{dataset.name}</span>
-        <i className="bi bi-chevron-right" aria-hidden="true" />
-        <span>Lekcje</span>
-        <i className="bi bi-chevron-right" aria-hidden="true" />
-        <strong>{String(lesson.order).padStart(2, '0')} / {lesson.title}</strong>
+        <span>Bazy danych · {dataset.name} · Lekcja {lesson.order}</span>
       </div>
 
       <div className="lesson-heading-row">
         <div>
-          <div className="lesson-heading-meta">
-            Lekcja {lesson.order} <span className="meta-divider">/</span> {lesson.difficulty}
-          </div>
-          <h1>{lesson.title}</h1>
+          <h1><i className="bi bi-journal-code" aria-hidden="true" /> {lesson.title}</h1>
           <p className="lesson-lead">{lesson.theory}</p>
         </div>
         <div className={`database-status ${isReady ? 'is-ready' : ''}`}>
@@ -82,13 +73,11 @@ function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite', activeT
 
       <section className="task-callout" aria-labelledby="lesson-task-title">
         <div className="task-callout-header">
-          <div className="task-icon"><i className="bi bi-filetype-html" aria-hidden="true" /></div>
+          <div className="task-icon"><i className="bi bi-list-check" aria-hidden="true" /></div>
           <div className="task-callout-heading">
-            <div className="task-label">Praktyka SQL</div>
             <h2 id="lesson-task-title">Zadanie do wykonania</h2>
             <p>{completedCount}/{tasks.length} zadań zaliczonych w tej sesji</p>
           </div>
-          <span className="task-session-badge"><i className="bi bi-lightning-charge-fill" aria-hidden="true" /> Sesja</span>
         </div>
 
         <div className="task-checklist" role="list" aria-label="Zadania lekcji">

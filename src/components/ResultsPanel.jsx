@@ -43,7 +43,7 @@ function ResultsPanel({ result, history = [], onHistorySelect, showHistory = tru
         <HistoryPanel history={history} onHistorySelect={onHistorySelect} />
       ) : (
         <div className="results-body">
-          {!result && <div className="results-empty"><div className="results-empty-icon"><i className="bi bi-table" aria-hidden="true" /></div><strong>Wyniki pojawią się tutaj</strong><p>Wykonaj zapytanie, aby zobaczyć tabelę danych.</p></div>}
+          {!result && <div className="results-empty"><div className="results-empty-icon"><i className="bi bi-table" aria-hidden="true" /></div><p>Uruchom zapytanie, aby zobaczyć wynik.</p></div>}
           {result?.ok === false && <div className="results-error"><div className="error-badge"><i className="bi bi-x-lg" aria-hidden="true" /></div><div><strong>{result.message}</strong><p>{result.hint ?? 'Sprawdź składnię i spróbuj ponownie.'}</p><small>Typ błędu: {result.errorType ?? 'SQL'}</small></div></div>}
           {result?.ok && hasRows && <div className="results-table-wrap"><table className="results-table"><thead><tr>{result.columns.map((column) => <th key={column}>{column}</th>)}</tr></thead><tbody>{result.rows.map((row, rowIndex) => <tr key={`row-${rowIndex}`}>{row.map((value, cellIndex) => <td key={`cell-${rowIndex}-${cellIndex}`}>{formatCell(value)}</td>)}</tr>)}</tbody></table></div>}
           {result?.ok && !hasRows && !isMutation && <div className="results-no-rows"><i className="bi bi-inbox" aria-hidden="true" /><span>Zapytanie wykonało się poprawnie, ale nie zwróciło rekordów.</span></div>}
