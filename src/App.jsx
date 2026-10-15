@@ -1,3 +1,4 @@
+import { trackLabEvent, setLabContext } from './services/labAnalytics.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AppShell from './components/AppShell.jsx';
 import ConnectionPanel from './components/ConnectionPanel.jsx';
@@ -73,6 +74,11 @@ function App() {
   const lessonTasks = useMemo(() => lesson.tasks?.length ? lesson.tasks : [{ id: `${lesson.id}-guided`, title: 'Zadanie', prompt: lesson.task, hint: lesson.hint, solution: lesson.solution, expected: lesson.expected, successMessage: lesson.successMessage }], [lesson]);
   const [activeTaskId, setActiveTaskId] = useState('');
   const activeTask = useMemo(() => lessonTasks.find((task) => task.id === activeTaskId) ?? lessonTasks[0], [activeTaskId, lessonTasks]);
+  useEffect(() => {
+    setLabContext({lesson_id: lesson.id, task_id: activeTask?.id ?? '', mode});
+    trackLabEvent('task_open');
+  }, [lesson.id, activeTask?.id, mode]);
+  useEffect(() => { trackLabEvent('lesson_open', {lesson_id:lesson.id}); }, [lesson.id]);
   const customTablesForDataset = useMemo(() => customTables?.[datasetId] ?? [], [customTables, datasetId]);
   const savedRelationships = relationshipOverrides?.[datasetId];
   const sqliteRelationships = useMemo(() => (Array.isArray(savedRelationships) ? savedRelationships : dataset.relationships), [dataset.relationships, savedRelationships]);
@@ -115,6 +121,7 @@ function App() {
   }, [lessonId, lesson.solution, lessonTasks]);
 
   const handleDatasetChange = (nextDatasetId) => {
+    trackLabEvent('topic_change',{track_id:nextDatasetId});
     const nextDataset = getDataset(nextDatasetId);
     const firstLesson = COURSE_LESSONS.find((item) => item.datasetId === nextDataset.id) ?? COURSE_LESSONS[0];
     setDatasetId(nextDataset.id);
@@ -146,6 +153,7 @@ function App() {
   };
 
   const handleModeChange = (nextMode) => {
+    trackLabEvent('mode_change',{mode:nextMode});
     previewRequestRef.current += 1;
     setMode(nextMode);
     setIsRelationEditorOpen(false);
@@ -355,6 +363,7 @@ function App() {
   };
 
   const executeCurrentQuery = async (action = 'run') => {
+    trackLabEvent('task_run_started',{action});
     const executedSql = sqlText;
     if (mode !== 'sqlite') {
       const queryResult = await runMysqlQuery(connection, executedSql, allowMutations, allowSchemaMutations);
@@ -363,6 +372,7 @@ function App() {
       setResult(queryResult);
       setFeedback(null);
       saveHistory(queryResult, executedSql, action);
+    trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
       return { ...queryResult, schema };
     }
     const queryResult = sqlite.execute(executedSql);
@@ -370,6 +380,7 @@ function App() {
     setResult(queryResult);
     setFeedback(null);
     saveHistory(queryResult, executedSql, action);
+    trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
     return { ...queryResult, schema };
   };
 
@@ -385,6 +396,7 @@ function App() {
         return;
       }
       const validation = validateSchema(queryResult.schema ?? (mode === 'sqlite' ? sqlite.schema : mysqlSchema), activeTask.expectedSchema);
+      trackLabEvent('task_check_result', {passed:Boolean(validation.passed)});
       if (validation.passed) {
         const taskKey = getTaskProgressKey(lesson.id, activeTask.id);
         const nextTaskProgress = { ...taskProgress, [taskKey]: true };
@@ -401,6 +413,7 @@ function App() {
       return;
     }
     const validation = validateQueryResult(queryResult, activeTask?.expected);
+    trackLabEvent('task_check_result', {passed:Boolean(validation.passed)});
     if (validation.passed) {
       const taskKey = getTaskProgressKey(lesson.id, activeTask.id);
       const nextTaskProgress = { ...taskProgress, [taskKey]: true };

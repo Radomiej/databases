@@ -1,3 +1,4 @@
+import { trackLabEvent, setLabContext } from '../services/labAnalytics.js';
 import { useEffect, useRef, useState } from 'react';
 import AppShell from './AppShell.jsx';
 import SchemaPanel from './SchemaPanel.jsx';
@@ -28,6 +29,10 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
   const [storageWarning, setStorageWarning] = useState(false);
   const database = useRef(null);
   const task = session.tasks.find((entry) => entry.id === work.active) ?? session.tasks[0];
+  useEffect(() => {
+    setLabContext({mode:'training',lesson_number:task.lessonOrder});
+    trackLabEvent('training_task_open');
+  },[task.id,task.lessonOrder]);
   const sql = work.drafts[task.id] ?? '';
   const completed = session.tasks.filter((entry) => work.passed[entry.id]).length;
 
@@ -60,10 +65,13 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
   const changeSql = (value) => setWork((current) => ({ ...current, drafts: { ...current.drafts, [task.id]: value } }));
   const execute = (check = false) => {
     if (status !== 'ready') return;
+    trackLabEvent('training_run_started',{action:check?'check':'run'});
     const next = runTrainingQuery(database.current, sql);
+    trackLabEvent('training_run_result',{passed:Boolean(next.ok)});
     setResult(next); setFeedback(null);
     if (check) {
       const validation = validateTrainingResult(next, task);
+      trackLabEvent('training_check_result',{passed:Boolean(validation.passed)});
       if (validation.passed) setWork((current) => ({ ...current, passed: { ...current.passed, [task.id]: true } }));
       setFeedback({ type: validation.passed ? 'success' : 'warning', title: validation.passed ? 'Zadanie zaliczone' : 'Jeszcze nie tym razem', message: validation.message, details: validation.details });
     }
