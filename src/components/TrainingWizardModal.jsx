@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock.js';
 import { generateTraining, TRAINING_LESSONS, TRAINING_THEMES } from '../services/trainingGenerator.js';
+import { createExamTraining, EXAM_SETS } from '../services/examTraining.js';
 
 const defaults = { start: 1, end: 5, count: 5, difficulty: 'standard', theme: 'shop', rows: 24, hints: true, seed: '' };
 
-export default function TrainingWizardModal({ open, onClose, onGenerate, generate = generateTraining }) {
+export default function TrainingWizardModal({ open, onClose, onGenerate, generate = generateTraining, generateExam = createExamTraining }) {
   const [options, setOptions] = useState(defaults);
   const [scope, setScope] = useState('range');
+  const [mode, setMode] = useState('generated');
+  const [examId, setExamId] = useState(EXAM_SETS[0].id);
+  const [examTask, setExamTask] = useState('all');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const request = useRef(0);
@@ -43,7 +47,9 @@ export default function TrainingWizardModal({ open, onClose, onGenerate, generat
     const token = ++request.current;
     setBusy(true); setError('');
     try {
-      const session = await generate({ ...options, end: scope === 'single' ? options.start : options.end });
+      const session = mode === 'exam'
+        ? await generateExam({ examId, taskId: examTask, hints: options.hints })
+        : await generate({ ...options, end: scope === 'single' ? options.start : options.end });
       if (token === request.current) onGenerate(session);
     } catch (failure) { if (token === request.current) setError(failure.message ?? 'Nie udało się wygenerować zestawu.'); }
     finally { if (token === request.current) setBusy(false); }
@@ -58,6 +64,17 @@ export default function TrainingWizardModal({ open, onClose, onGenerate, generat
           <div className="modal-body-custom settings-modal-body">
             <div className="training-info"><i className="bi bi-shield-check" /> Oddzielny sandbox SQLite. Bazy kursu i MySQL pozostaną bez zmian. Zadania są samodzielne — bez gotowych rozwiązań.</div>
             <fieldset disabled={busy}>
+              <legend>Rodzaj treningu</legend>
+              <div className="training-scope"><label><input type="radio" name="training-mode" checked={mode === 'generated'} onChange={() => setMode('generated')} /> Zadania generowane</label><label><input type="radio" name="training-mode" checked={mode === 'exam'} onChange={() => setMode('exam')} /> Zadania egzaminacyjne</label></div>
+            </fieldset>
+            {mode === 'exam' ? <fieldset disabled={busy}>
+              <legend>Wybierz arkusz i kwerendę</legend>
+              <label htmlFor="training-exam">Arkusz<select id="training-exam" className="form-select" value={examId} onChange={(event) => { setExamId(event.target.value); setExamTask('all'); }}>{EXAM_SETS.map((exam) => <option key={exam.id} value={exam.id}>{exam.title}</option>)}</select></label>
+              <label htmlFor="training-exam-task">Kwerenda<select id="training-exam-task" className="form-select" value={examTask} onChange={(event) => setExamTask(event.target.value)}><option value="all">Wszystkie kwerendy z arkusza</option>{EXAM_SETS.find((exam) => exam.id === examId).tasks.map((task) => <option key={task.id} value={task.id}>{task.title} · {task.lessonTitle}</option>)}</select></label>
+              <p className="training-caption">{EXAM_SETS.find((exam) => exam.id === examId).description}</p>
+              <a href={EXAM_SETS.find((exam) => exam.id === examId).sourceUrl} target="_blank" rel="noreferrer">Zobacz treść arkusza źródłowego</a>
+              <label className="training-check"><input type="checkbox" checked={options.hints} onChange={(event) => change('hints', event.target.checked)} /> Dostępne podpowiedzi (bez rozwiązania)</label>
+            </fieldset> : <fieldset disabled={busy}>
               <legend>1. Wybierz materiał</legend>
               <div className="training-scope"><label><input type="radio" name="training-scope" checked={scope === 'single'} onChange={() => setScope('single')} /> Jedna lekcja</label><label><input type="radio" name="training-scope" checked={scope === 'range'} onChange={() => { setScope('range'); if (options.end - options.start + 1 > 5) change('count', 10); }} /> Zakres lekcji</label></div>
               <div className="training-fields"><label htmlFor="training-start">{scope === 'single' ? 'Lekcja' : 'Od lekcji'}<select id="training-start" className="form-select" value={options.start} onChange={(event) => { const start = Number(event.target.value); setOptions((current) => ({ ...current, start, end: Math.max(start, current.end), count: current.end - start + 1 > 5 ? 10 : current.count })); }}>{lessonOptions}</select></label>{scope === 'range' && <label htmlFor="training-end">Do lekcji<select id="training-end" className="form-select" value={options.end} onChange={(event) => { const end = Number(event.target.value); setOptions((current) => ({ ...current, end, start: Math.min(end, current.start), count: end - current.start + 1 > 5 ? 10 : current.count })); }}>{lessonOptions}</select></label>}</div>
@@ -73,7 +90,7 @@ export default function TrainingWizardModal({ open, onClose, onGenerate, generat
               <h3 className="training-section-title">3. Opcjonalnie: wspólny zestaw dla klasy</h3>
               <label htmlFor="training-seed">Kod zestawu<input id="training-seed" className="form-control" value={options.seed} maxLength={80} placeholder="Puste pole = nowy losowy kod" onChange={(event) => change('seed', event.target.value)} /></label>
               <p className="training-caption">Ten sam kod i parametry odtwarzają identyczne dane i zadania. Postęp i kod zapisujemy w sesji tej karty, także po odświeżeniu.</p>
-            </fieldset>
+            </fieldset>}
             {error && <div className="alert alert-danger mt-3" role="alert">{error}</div>}
           </div>
           <footer className="modal-footer-custom"><button type="button" className="btn btn-modal-ghost" onClick={close}>Anuluj</button><button className="btn btn-run" type="submit" disabled={busy}>{busy ? 'Przygotowuję bazę…' : 'Utwórz sandbox'}</button></footer>

@@ -96,6 +96,8 @@ Domyślnie connector pozwala na `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN` i odczyt
 
 ## Trening SQL — generator zadań
 
+W kreatorze „Trening SQL” wybierz „Zadania generowane” albo „Zadania egzaminacyjne”. Tryb egzaminacyjny zawiera cztery kwerendy SELECT na podstawie arkusza INF.03-03-24.06-SG (Stany rzek). Można ćwiczyć wszystkie kwerendy albo jedną wybraną. Źródło arkusza jest podlinkowane w kreatorze i sandboxie. Baza zawiera własne dane ćwiczeniowe, dostosowane do SQLite, a nie oryginalny import z egzaminu. Uczeń pisze zapytania od zera; sprawdzany jest wynik na tej bazie. Zakres obejmuje SELECT, WHERE, JOIN i AVG z GROUP BY. Postęp i szkice zachowują się po odświeżeniu karty, tak jak w treningu generowanym.
+
 Przycisk **Trening SQL** u góry aplikacji otwiera kreator samodzielnego treningu. Wybierz jedną lekcję lub zakres lekcji 1–8, poziom trudności, 5 albo 10 zadań, temat bazy (sklep, klub sportowy, wypożyczalnia), 12/24/48 wierszy w tabeli i dostępność podpowiedzi. Dla zakresu dłuższego niż pięć lekcji wymagane jest 10 zadań, aby każda wybrana lekcja miała swoje ćwiczenie.
 
 Generator tworzy oddzielną bazę SQLite z dwiema tabelami i losowymi danymi. Nie zmienia baz kursu, własnych tabel ani MySQL. Temat zmienia nazwy tabel i dane, a zakres ogranicza składnię zadań do bieżącego oraz wcześniejszego materiału. JOIN i zadania DDL nie są jeszcze objęte generatorem.
