@@ -179,3 +179,14 @@ test('records only executed SQL with the selected lesson, task, database and act
     expect(entries[0]).toMatchObject({ sql: 'SELECT 1;', action: 'check' });
   });
 });
+
+const telemetryCapture=vi.hoisted(()=>vi.fn());
+vi.mock('./hooks/useSessionTelemetry.js',()=>({useSessionTelemetry:()=>({capture:telemetryCapture,machineId:'test-machine',status:'disabled',studentName:'',setStudentName:()=>{}})}));
+test('captures exact SQL at Run and the completed result',async()=>{
+ telemetryCapture.mockClear();render(<App/>);
+ const editor=screen.getByRole('textbox',{name:'Zapytanie SQL'});
+ fireEvent.change(editor,{target:{value:'SELECT 42;'}});
+ fireEvent.click(screen.getByRole('button',{name:/uruchom/i}));
+ await waitFor(()=>expect(telemetryCapture).toHaveBeenCalledWith('run_result',expect.objectContaining({files:{'query.sql':'SELECT 42;'},runnerStatus:'ready'})));
+ expect(telemetryCapture).toHaveBeenCalledWith('run_started',expect.objectContaining({files:{'query.sql':'SELECT 42;'},passed:null}));
+});

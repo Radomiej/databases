@@ -1,6 +1,8 @@
+import StudentIdentity from './StudentIdentity.jsx';
 import ModeSelector from './ModeSelector.jsx';
 
 function Sidebar({
+  telemetry,
   mode,
   onModeChange,
   datasets,
@@ -26,6 +28,7 @@ function Sidebar({
         </div>
       </div>
 
+      <StudentIdentity telemetry={telemetry}/>
       <div className="sidebar-section">
         <div className="sidebar-section-label">Środowisko</div>
         <ModeSelector mode={mode} onChange={onModeChange} />

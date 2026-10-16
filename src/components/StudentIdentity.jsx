@@ -1,0 +1,4 @@
+export default function StudentIdentity({telemetry}){
+ if(!telemetry)return null;
+ return <section style={{padding:'12px',fontSize:'12px',overflowWrap:'anywhere'}} aria-label="Tożsamość ucznia"><div title={telemetry.machineId}>ID: {telemetry.machineId}</div><label style={{display:'grid',gap:6,marginTop:8}}>Twoja nazwa (opcjonalnie)<input type="text" maxLength={80} placeholder="Np. Ola · 3A" value={telemetry.studentName} onChange={e=>telemetry.setStudentName(e.target.value)} style={{width:'100%',minWidth:0,boxSizing:'border-box',padding:8,border:'1px solid #b7c5ce',borderRadius:6,color:'#173544',background:'#fff'}}/></label>{telemetry.status!=='disabled'&&<p role="status">Kod i nazwa są udostępniane nauczycielowi. {({online:'Połączono',connecting:'Łączenie…',offline:'Brak połączenia — możesz pracować dalej',too_large:'Projekt za duży do synchronizacji'})[telemetry.status]}</p>}</section>;
+}

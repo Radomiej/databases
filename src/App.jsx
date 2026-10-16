@@ -1,3 +1,5 @@
+import {useSessionTelemetry} from './hooks/useSessionTelemetry.js';
+import {sqlSnapshot,sqlOutcome} from './services/telemetrySnapshot.js';
 import { trackLabEvent, setLabContext } from './services/labAnalytics.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AppShell from './components/AppShell.jsx';
@@ -88,6 +90,9 @@ function App() {
     task: { title: activeTask?.title, prompt: activeTask?.prompt ?? lesson.task, hint: activeTask?.hint ?? lesson.hint },
     schema: mode === 'sqlite' ? sqlite.schema : mysqlSchema,
   };
+
+  const telemetrySnapshot=sqlSnapshot({lesson,task:activeTask,sql:sqlText,result,progress:{completed:Object.values(taskProgress).filter(Boolean).length,total:COURSE_LESSONS.reduce((n,item)=>n+(item.tasks?.length||1),0)},passed:feedback?.type==='success'?true:feedback?.type==='warning'?false:null});
+  const telemetry=useSessionTelemetry(telemetrySnapshot,!trainingSession);
 
   useEffect(() => {
     try {
@@ -365,6 +370,8 @@ function App() {
   const executeCurrentQuery = async (action = 'run') => {
     trackLabEvent('task_run_started',{action});
     const executedSql = sqlText;
+    const runSnapshot={...telemetrySnapshot,files:{'query.sql':executedSql}};
+    telemetry.capture('run_started',{...runSnapshot,runnerStatus:'running',output:'',passed:null});
     if (mode !== 'sqlite') {
       const queryResult = await runMysqlQuery(connection, executedSql, allowMutations, allowSchemaMutations);
       let schema;
@@ -372,7 +379,9 @@ function App() {
       setResult(queryResult);
       setFeedback(null);
       saveHistory(queryResult, executedSql, action);
-    trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
+      trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
+      const validation=action==='check'&&activeTask?.expectedSchema?validateSchema(schema??mysqlSchema,activeTask.expectedSchema):null;
+      telemetry.capture('run_result',{...runSnapshot,runnerStatus:queryResult.ok?'ready':'error',output:sqlOutcome(queryResult),passed:queryResult.ok===false?false:validation?.passed??null});
       return { ...queryResult, schema };
     }
     const queryResult = sqlite.execute(executedSql);
@@ -381,6 +390,8 @@ function App() {
     setFeedback(null);
     saveHistory(queryResult, executedSql, action);
     trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
+    const validation=action==='check'?(activeTask?.expectedSchema?validateSchema(schema,activeTask.expectedSchema):validateQueryResult(queryResult,activeTask?.expected)):null;
+    telemetry.capture('run_result',{...runSnapshot,runnerStatus:queryResult.ok?'ready':'error',output:sqlOutcome(queryResult),passed:queryResult.ok===false?false:validation?.passed??null});
     return { ...queryResult, schema };
   };
 
@@ -427,6 +438,7 @@ function App() {
 
   const sidebar = (
     <Sidebar
+      telemetry={telemetry}
       mode={mode}
       onModeChange={handleModeChange}
       datasets={DATASETS}

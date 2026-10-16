@@ -1,4 +1,7 @@
 import { trackLabEvent, setLabContext } from '../services/labAnalytics.js';
+import StudentIdentity from './StudentIdentity.jsx';
+import {useSessionTelemetry} from '../hooks/useSessionTelemetry.js';
+import {sqlSnapshot,sqlOutcome} from '../services/telemetrySnapshot.js';
 import { useEffect, useRef, useState } from 'react';
 import AppShell from './AppShell.jsx';
 import SchemaPanel from './SchemaPanel.jsx';
@@ -34,6 +37,8 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
     trackLabEvent('training_task_open');
   },[task.id,task.lessonOrder]);
   const sql = work.drafts[task.id] ?? '';
+  const telemetrySnapshot=sqlSnapshot({lesson:{id:'training-'+session.options.seed,title:task.lessonTitle||'Trening SQL',order:task.lessonOrder},task,sql,result,status,progress:{completed:session.tasks.filter(entry=>work.passed[entry.id]).length,total:session.tasks.length},passed:work.passed[task.id]?true:null});
+  const telemetry=useSessionTelemetry(telemetrySnapshot);
   const completed = session.tasks.filter((entry) => work.passed[entry.id]).length;
 
   useEffect(() => {
@@ -65,8 +70,11 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
   const changeSql = (value) => setWork((current) => ({ ...current, drafts: { ...current.drafts, [task.id]: value } }));
   const execute = (check = false) => {
     if (status !== 'ready') return;
+    const runSnapshot={...telemetrySnapshot};
+    telemetry.capture('run_started',{...runSnapshot,runnerStatus:'running',output:'',passed:null});
     trackLabEvent('training_run_started',{action:check?'check':'run'});
     const next = runTrainingQuery(database.current, sql);
+    telemetry.capture('run_result',{...runSnapshot,runnerStatus:next.ok?'ready':'error',output:sqlOutcome(next),passed:check?validateTrainingResult(next,task).passed:next.ok===false?false:null});
     trackLabEvent('training_run_result',{passed:Boolean(next.ok)});
     setResult(next); setFeedback(null);
     if (check) {
@@ -80,6 +88,7 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
   const previewTable = (name) => setPreview({ table: session.dataset.tables.find((table) => table.name === name), result: runTrainingQuery(database.current, buildTablePreviewSql(name, 'sqlite')) });
   const sidebar = <div className="sidebar-content training-sidebar">
     <div className="brand-block"><div className="brand-mark"><i className="bi bi-lightning-charge-fill" /></div><div><div className="brand-name">Trening SQL</div><div className="brand-subtitle">Samodzielny sandbox</div></div></div>
+    <StudentIdentity telemetry={telemetry}/>
     <button type="button" className="btn btn-editor-secondary w-100" onClick={onBack}><i className="bi bi-arrow-left" /> Wróć do kursu</button>
     <section className="training-progress"><span>{completed} / {session.tasks.length} zaliczonych</span><progress max={session.tasks.length} value={completed} aria-label="Postęp treningu" /><small>{completed === session.tasks.length ? 'Cały zestaw ukończony. Dobra robota!' : 'Możesz rozwiązywać zadania w dowolnej kolejności.'}</small></section>
     <nav className="training-task-list" aria-label="Zadania treningowe">{session.tasks.map((entry, index) => <button type="button" key={entry.id} className={`training-task ${entry.id === task.id ? 'is-active' : ''}`} aria-current={entry.id === task.id ? 'step' : undefined} onClick={() => selectTask(entry.id)}><i className={`bi ${work.passed[entry.id] ? 'bi-check-circle-fill' : 'bi-circle'}`} aria-label={work.passed[entry.id] ? 'Zaliczone' : 'Do wykonania'} /><span><strong>Zadanie {index + 1}</strong><small>Lekcja {entry.lessonOrder} · {entry.lessonTitle}</small></span></button>)}</nav>
