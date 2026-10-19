@@ -1,0 +1,20 @@
+.student-identity{margin:0 12px 14px;padding:12px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:10px;color:inherit;background:rgb(255 255 255 / 4%);font-size:12px;min-width:0;flex-shrink:0}
+.student-identity-heading{display:flex;align-items:center;gap:10px;min-width:0}
+.student-identity-copy{display:grid;gap:5px;flex:1;min-width:0}
+.student-identity-id{font-family:var(--mono,monospace);font-size:11px;line-height:1.6;overflow-wrap:anywhere;opacity:.8}
+.student-identity-name{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.student-identity .student-identity-edit{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px;padding:7px;color:inherit;background:transparent;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:8px;cursor:pointer}
+.student-identity-edit svg{flex-shrink:0}
+.student-identity .student-identity-edit:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.student-identity :is(button,input):focus-visible{outline:3px solid var(--teal-500,#25b8a7);outline-offset:3px}
+.student-identity-form{display:grid;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)}
+.student-identity-form label{font-weight:600;font-size:12px}
+.student-identity-form input{width:100%;min-width:0;box-sizing:border-box;padding:9px 10px;font:inherit;border:1px solid var(--line-strong,#c7d8e2);border-radius:7px;background:var(--paper,#fff);color:var(--ink-900,#17324d)}
+.student-identity-hint{font-size:11px;line-height:1.5;opacity:.8}
+.student-identity-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:3px}
+.student-identity-actions button{padding:7px 12px;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:7px;color:inherit;background:transparent;font:inherit;cursor:pointer}
+.student-identity-actions button[type=submit]{background:var(--teal-500,#25b8a7);border-color:transparent;color:#0e2438;font-weight:700}
+.student-identity-status{margin:10px 0 0;line-height:1.5;font-size:11px;overflow-wrap:anywhere}
+.student-identity-status small{display:block;margin-top:3px;font-size:10px;opacity:.75}
+.student-identity-dot{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:#d5a756;vertical-align:middle}
+.student-identity-dot[data-online=true]{background:var(--teal-500,#25b8a7)}
