@@ -166,3 +166,6 @@ Only controlled metadata is forwarded: no code, SQL, output, student names, inst
 
 ### Window focus telemetry
 Teacher session snapshots include optional `focused` status. Window focus/blur and document visibility changes send a heartbeat immediately; older clients remain compatible. Presence is independent of the 45-second connection timeout. Focus is sent only to the existing teacher backend, not Umami.
+
+
+Production domain alias `databaselab2.nekko.software` uses the same Database Lab Umami website as `databases-mauve.vercel.app`; both aliases were confirmed in Vercel. Other hosts remain excluded.
