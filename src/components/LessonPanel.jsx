@@ -1,3 +1,4 @@
+import CopyLessonLink from './CopyLessonLink.jsx';
 import { useState } from 'react';
 import { getTaskProgressKey } from '../data/lessonTasks.js';
 import LessonWalkthrough from './LessonWalkthrough.jsx';
@@ -69,6 +70,7 @@ function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite', activeT
         </div>
       </div>
 
+      <CopyLessonLink />
       <LessonWalkthrough walkthrough={lesson.walkthrough} />
 
       <section className="task-callout" aria-labelledby="lesson-task-title">

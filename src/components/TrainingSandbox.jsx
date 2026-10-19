@@ -75,7 +75,7 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
     trackLabEvent('training_run_started',{action:check?'check':'run'});
     const next = runTrainingQuery(database.current, sql);
     telemetry.capture('run_result',{...runSnapshot,runnerStatus:next.ok?'ready':'error',output:sqlOutcome(next),passed:check?validateTrainingResult(next,task).passed:next.ok===false?false:null});
-    trackLabEvent('training_run_result',{passed:Boolean(next.ok)});
+    trackLabEvent('training_run_result',{execution_ok:Boolean(next.ok)});
     setResult(next); setFeedback(null);
     if (check) {
       const validation = validateTrainingResult(next, task);

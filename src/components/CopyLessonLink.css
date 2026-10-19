@@ -1,0 +1,5 @@
+.lesson-link-action{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 14px;font-size:12px}
+.lesson-link-action button{display:inline-flex;gap:7px;align-items:center;padding:7px 10px;border:1px solid var(--line-strong,#c7d8e2);border-radius:7px;background:var(--paper,#fff);color:var(--ink-900,#17324d);font:inherit;cursor:pointer}
+.lesson-link-action svg{flex-shrink:0}
+.lesson-link-action button:focus-visible{outline:3px solid var(--teal-500,#25b8a7);outline-offset:3px}
+.lesson-link-action [role=status]{font-size:11px}

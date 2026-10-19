@@ -1,3 +1,5 @@
+import {createCourseRoutes} from './services/courseRoutes.js';
+import {useCourseRoute} from './hooks/useCourseRoute.js';
 import {useSessionTelemetry} from './hooks/useSessionTelemetry.js';
 import {sqlSnapshot,sqlOutcome} from './services/telemetrySnapshot.js';
 import { trackLabEvent, setLabContext } from './services/labAnalytics.js';
@@ -35,6 +37,7 @@ const DEFAULT_CONNECTION = { host: '127.0.0.1', port: 3306, database: 'inf03_lab
 
 function App() {
   const [trainingSession, setTrainingSession] = useState(() => {
+    if(location.hash.startsWith('#/')) return null;
     try {
       const saved = JSON.parse(sessionStorage.getItem('sql-lab.training-session'));
       return saved?.version === 1 && saved.dataset?.tables?.length && saved.tasks?.length && saved.options ? saved : null;
@@ -77,7 +80,7 @@ function App() {
   const [activeTaskId, setActiveTaskId] = useState('');
   const activeTask = useMemo(() => lessonTasks.find((task) => task.id === activeTaskId) ?? lessonTasks[0], [activeTaskId, lessonTasks]);
   useEffect(() => {
-    setLabContext({lesson_id: lesson.id, task_id: activeTask?.id ?? '', mode});
+    setLabContext({track_id:lesson.datasetId,lesson_id:lesson.id,lesson_number:lesson.order,task_id:activeTask?.id??'',mode});
     trackLabEvent('task_open');
   }, [lesson.id, activeTask?.id, mode]);
   useEffect(() => { trackLabEvent('lesson_open', {lesson_id:lesson.id}); }, [lesson.id]);
@@ -119,8 +122,9 @@ function App() {
 
   useEffect(() => {
     const firstTask = lessonTasks[0];
-    setActiveTaskId(firstTask?.id ?? '');
-    setSqlText(firstTask ? getTaskSqlDraft(taskSqlByKey, lesson.id, firstTask, firstTask) : lesson.solution);
+    const selectedTask=lessonTasks.find(task=>task.id===activeTaskId)||firstTask;
+    setActiveTaskId(selectedTask?.id ?? '');
+    setSqlText(selectedTask ? getTaskSqlDraft(taskSqlByKey, lesson.id, selectedTask, firstTask) : lesson.solution);
     setResult(null);
     setFeedback(null);
   }, [lessonId, lesson.solution, lessonTasks]);
@@ -171,6 +175,15 @@ function App() {
     if (nextMode === 'sqlite') setConnection((current) => ({ ...current, password: '' }));
     setSidebarOpen(false);
   };
+
+  const courseRoutes=useMemo(()=>createCourseRoutes(COURSE_LESSONS,{topics:item=>['sqlite/'+item.datasetId,'mysql/'+item.datasetId]}),[]);
+  useCourseRoute(courseRoutes,JSON.stringify([`${mode}/${datasetId}`,lesson.id,activeTask.id]),target=>{
+    const [nextMode,nextDataset]=target.topic.split('/');
+    handleModeChange(nextMode);setDatasetId(nextDataset);setLessonId(target.lesson.id);
+    setActiveTaskId(target.task.id);
+    setSqlText(getTaskSqlDraft(taskSqlByKey,target.lesson.id,target.task,target.lesson.tasks[0]));
+    setResult(null);setFeedback(null);
+  },{enabled:!trainingSession});
 
   const handleConnectionChange = (nextConnection) => {
     setConnection(nextConnection);
@@ -379,7 +392,7 @@ function App() {
       setResult(queryResult);
       setFeedback(null);
       saveHistory(queryResult, executedSql, action);
-      trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
+      trackLabEvent('task_run_result',{action,execution_ok:Boolean(queryResult.ok)});
       const validation=action==='check'&&activeTask?.expectedSchema?validateSchema(schema??mysqlSchema,activeTask.expectedSchema):null;
       telemetry.capture('run_result',{...runSnapshot,runnerStatus:queryResult.ok?'ready':'error',output:sqlOutcome(queryResult),passed:queryResult.ok===false?false:validation?.passed??null});
       return { ...queryResult, schema };
@@ -389,7 +402,7 @@ function App() {
     setResult(queryResult);
     setFeedback(null);
     saveHistory(queryResult, executedSql, action);
-    trackLabEvent('task_run_result',{action,passed:Boolean(queryResult.ok)});
+    trackLabEvent('task_run_result',{action,execution_ok:Boolean(queryResult.ok)});
     const validation=action==='check'?(activeTask?.expectedSchema?validateSchema(schema,activeTask.expectedSchema):validateQueryResult(queryResult,activeTask?.expected)):null;
     telemetry.capture('run_result',{...runSnapshot,runnerStatus:queryResult.ok?'ready':'error',output:sqlOutcome(queryResult),passed:queryResult.ok===false?false:validation?.passed??null});
     return { ...queryResult, schema };
