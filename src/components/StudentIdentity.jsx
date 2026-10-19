@@ -28,6 +28,6 @@ export default function StudentIdentity({telemetry}){
    <span className="student-identity-hint">Opcjonalnie — nauczyciel zobaczy tę nazwę obok ID.</span>
    <div className="student-identity-actions"><button type="submit">Zapisz</button><button type="button" onClick={()=>setEditing(false)}>Anuluj</button></div>
   </form>}
-  {telemetry.status!=='disabled'&&<p className="student-identity-status" role="status"><span className="student-identity-dot" data-online={telemetry.status==='online'} aria-hidden="true"/>{statuses[telemetry.status]||'Łączenie…'}<small>Kod i nazwa są udostępniane nauczycielowi.</small></p>}
+  {telemetry.status!=='disabled'&&<p className="student-identity-status" role="status"><span className="student-identity-dot" data-online={telemetry.status==='online'} aria-hidden="true"/>{statuses[telemetry.status]||'Łączenie…'}<small>Kod, nazwa i statystyki edycji są udostępniane nauczycielowi.</small></p>}
  </section>;
 }

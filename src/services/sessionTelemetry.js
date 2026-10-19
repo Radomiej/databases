@@ -1,6 +1,8 @@
+import {createEditingActivity} from './editingActivity.js';
 import {getInstallationId,newId} from './installationId.js';
 import {validateEvent,MAX_EVENT_BYTES} from '../../shared/telemetry/schema.js';
 export function createSessionTelemetry({fetchImpl=(...args)=>fetch(...args),getSnapshot,onStatus=()=>{},documentRef=globalThis.document,enabled=false,machineId=getInstallationId(),appId='databases',getStudentName=()=>''}={}) {
+  const editingActivity=createEditingActivity({documentRef});
   const sessionId=newId();let sequence=0,queue=[],running=false,busy=false,token=null,expiresAt=0,retry=null,heartbeat=null,sampling=null,lastSample='',backoff=2000,controller;
   const status=s=>{try{onStatus(s);}catch{}};
   const request=async(url,body,headers={})=>{
@@ -22,7 +24,7 @@ export function createSessionTelemetry({fetchImpl=(...args)=>fetch(...args),getS
   const enqueue=(type,override)=>{
     if(!running)return;
     try{
-      const snapshot={...(override||getSnapshot()),visibility:documentRef?.visibilityState==='hidden'?'hidden':'visible'};
+      const snapshot={...(override||getSnapshot()),editingActivity:editingActivity.snapshot(),visibility:documentRef?.visibilityState==='hidden'?'hidden':'visible'};
       const raw={version:1,eventId:newId(),machineId,sessionId,appId,studentName:getStudentName(),sequence:++sequence,type,sentAt:Date.now(),snapshot};
       if(new TextEncoder().encode(JSON.stringify(raw)).length>MAX_EVENT_BYTES){status('too_large');return;}
       const event=validateEvent(raw);
@@ -58,8 +60,8 @@ export function createSessionTelemetry({fetchImpl=(...args)=>fetch(...args),getS
   const visibility=()=>enqueue('heartbeat');
   return {
     machineId,sessionId,pendingCount:()=>queue.length,
-    start(){if(running||!enabled){status(enabled?'offline':'disabled');return;}running=true;status('connecting');enqueue('session_started');heartbeat=setInterval(()=>enqueue('heartbeat'),15000);sampling=setInterval(sample,30000);globalThis.addEventListener?.('online',online);documentRef?.addEventListener('visibilitychange',visibility);},
+    start(){if(running||!enabled){status(enabled?'offline':'disabled');return;}running=true;editingActivity.start();status('connecting');enqueue('session_started');heartbeat=setInterval(()=>enqueue('heartbeat'),15000);sampling=setInterval(sample,30000);globalThis.addEventListener?.('online',online);documentRef?.addEventListener('visibilitychange',visibility);},
     changed(type='snapshot',override){if(running&&(type!=='snapshot'||override))enqueue(type,override);},
-    stop(){running=false;clearTimeout(retry);clearInterval(heartbeat);clearInterval(sampling);retry=null;controller?.abort();queue=[];globalThis.removeEventListener?.('online',online);documentRef?.removeEventListener('visibilitychange',visibility);},
+    stop(){running=false;editingActivity.stop();clearTimeout(retry);clearInterval(heartbeat);clearInterval(sampling);retry=null;controller?.abort();queue=[];globalThis.removeEventListener?.('online',online);documentRef?.removeEventListener('visibilitychange',visibility);},
   };
 }

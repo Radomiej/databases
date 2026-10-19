@@ -14,9 +14,17 @@ export function validateEvent(value) {
   if(progress&&progress.completed>progress.total)fail();
   const lessonNumber=s.lessonNumber==null?null:count(s.lessonNumber);
   const taskTitle=s.taskTitle===undefined?'':string(s.taskTitle,500);
+  let editingActivity=null;
+  if(s.editingActivity!=null){
+    const value=s.editingActivity;
+    editingActivity={};
+    for(const key of ['typedCharacters','pastedCharacters','pasteCount','largestPaste','deletionActions','recentTypedCharacters','charactersPerMinute'])editingActivity[key]=count(value[key],1000000000);
+    for(const key of ['measuredSince','lastEditAt','lastPasteAt'])editingActivity[key]=count(value[key],8640000000000000);
+    if(editingActivity.recentTypedCharacters>editingActivity.typedCharacters||editingActivity.largestPaste>editingActivity.pastedCharacters)fail();
+  }
   const files=Object.create(null), entries=Object.entries(s.files);
   if(entries.length>100)fail();
   for(const [path,code] of entries){if(!path || path.length>200 || path.startsWith('/') || path.includes('..') || path.includes('\\') || ['__proto__','prototype','constructor'].includes(path))fail();files[path]=string(code,MAX_EVENT_BYTES);}
   if(!['visible','hidden'].includes(s.visibility)||![true,false,null].includes(s.passed))fail();
-  return {version,eventId,machineId,sessionId,sequence,type,sentAt,appId,studentName:string(studentName,80).trim(),...(type==='history_gap'?{droppedEvents:value.droppedEvents}:{}),snapshot:{lessonNumber,taskTitle,progress,lessonId:string(s.lessonId,200),lessonTitle:string(s.lessonTitle,500),taskId:string(s.taskId,200),activeFile:string(s.activeFile,200),files,runnerStatus:string(s.runnerStatus,40),output:string(s.output,20000),passed:s.passed,visibility:s.visibility}};
+  return {version,eventId,machineId,sessionId,sequence,type,sentAt,appId,studentName:string(studentName,80).trim(),...(type==='history_gap'?{droppedEvents:value.droppedEvents}:{}),snapshot:{lessonNumber,taskTitle,progress,editingActivity,lessonId:string(s.lessonId,200),lessonTitle:string(s.lessonTitle,500),taskId:string(s.taskId,200),activeFile:string(s.activeFile,200),files,runnerStatus:string(s.runnerStatus,40),output:string(s.output,20000),passed:s.passed,visibility:s.visibility}};
 }
