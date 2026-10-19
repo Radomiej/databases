@@ -25,6 +25,7 @@ export function validateEvent(value) {
   const files=Object.create(null), entries=Object.entries(s.files);
   if(entries.length>100)fail();
   for(const [path,code] of entries){if(!path || path.length>200 || path.startsWith('/') || path.includes('..') || path.includes('\\') || ['__proto__','prototype','constructor'].includes(path))fail();files[path]=string(code,MAX_EVENT_BYTES);}
+  if(s.focused!=null&&typeof s.focused!=='boolean')fail();
   if(!['visible','hidden'].includes(s.visibility)||![true,false,null].includes(s.passed))fail();
-  return {version,eventId,machineId,sessionId,sequence,type,sentAt,appId,clientVersion:string(clientVersion,120),studentName:string(studentName,80).trim(),...(type==='history_gap'?{droppedEvents:value.droppedEvents}:{}),snapshot:{lessonNumber,taskTitle,progress,editingActivity,lessonId:string(s.lessonId,200),lessonTitle:string(s.lessonTitle,500),taskId:string(s.taskId,200),activeFile:string(s.activeFile,200),files,runnerStatus:string(s.runnerStatus,40),output:string(s.output,20000),passed:s.passed,visibility:s.visibility}};
+  return {version,eventId,machineId,sessionId,sequence,type,sentAt,appId,clientVersion:string(clientVersion,120),studentName:string(studentName,80).trim(),...(type==='history_gap'?{droppedEvents:value.droppedEvents}:{}),snapshot:{lessonNumber,taskTitle,progress,editingActivity,lessonId:string(s.lessonId,200),lessonTitle:string(s.lessonTitle,500),taskId:string(s.taskId,200),activeFile:string(s.activeFile,200),files,runnerStatus:string(s.runnerStatus,40),output:string(s.output,20000),passed:s.passed,visibility:s.visibility,focused:s.focused??null}};
 }

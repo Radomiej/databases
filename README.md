@@ -162,3 +162,7 @@ All custom events include `client_version` (`package.json` version + deployment 
 Lesson/task context includes stable IDs and lesson number. Web reports one result per actual preview/check run, rather than a new result for each subsequent iframe signal. SQL run events use `execution_ok`; `task_check_result.passed` records curriculum validation, not merely valid SQL. Java `task_focus_session.duration_seconds` is total visible task time, including full minutes; it overlaps the separate minute events and must not be summed with them.
 
 Only controlled metadata is forwarded: no code, SQL, output, student names, installation IDs, credentials or raw error text. Versioned lesson/task hash links can be copied with the lesson button; saved drafts stay local. Pageview URLs exclude query and hash. Automated checks cover version propagation, metadata filtering, deduplication, production-domain/DNT guards, task navigation and offline telemetry.
+
+
+### Window focus telemetry
+Teacher session snapshots include optional `focused` status. Window focus/blur and document visibility changes send a heartbeat immediately; older clients remain compatible. Presence is independent of the 45-second connection timeout. Focus is sent only to the existing teacher backend, not Umami.

@@ -3,7 +3,7 @@ import {CLIENT_VERSION} from './clientVersion.js';
 import {test,expect,vi,afterEach} from 'vitest';
 import {getInstallationId} from './installationId.js';
 import {createSessionTelemetry} from './sessionTelemetry.js';
-afterEach(()=>vi.useRealTimers());
+afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 const snapshot=()=>({lessonId:'a',lessonTitle:'A',taskId:'1',activeFile:'Main.java',files:{'Main.java':'class Main {}'},runnerStatus:'idle',output:'',passed:null,visibility:'visible'});
 test('Database Lab identifies its default telemetry events as databases',async()=>{
  const sent=[];
@@ -24,3 +24,13 @@ test('hanging requests timeout and oversized projects do not crash synchronizer'
 test('timeout includes a session response whose JSON body never finishes',async()=>{vi.useFakeTimers();const states=[];const c=createSessionTelemetry({fetchImpl:async()=>({ok:true,json:()=>new Promise(()=>{})}),getSnapshot:snapshot,enabled:true,onStatus:s=>states.push(s)});c.start();await vi.advanceTimersByTimeAsync(8001);expect(states).toContain('offline');c.stop();});
 test('typing alone waits for the thirty-second sample',async()=>{vi.useFakeTimers();const sent=[];const fetchImpl=async(url,options)=>url.endsWith('/session')?{ok:true,json:async()=>({token:'token',expiresAt:Date.now()+3600000})}:{ok:true,status:202,...(sent.push(JSON.parse(options.body)),{})};const c=createSessionTelemetry({fetchImpl,getSnapshot:snapshot,enabled:true});c.start();await vi.advanceTimersByTimeAsync(1);sent.length=0;for(let i=0;i<5;i++){c.changed();await vi.advanceTimersByTimeAsync(1000);}expect(sent.length).toBe(0);c.stop();});
 test('failed publication retries the same event ID and renews an expired token',async()=>{vi.useFakeTimers();const attempts=[];let first=true,sessionRequests=0;const fetchImpl=async(url,options)=>{if(url.endsWith('/session')){sessionRequests++;return {ok:true,json:async()=>({token:`token${sessionRequests}`,expiresAt:Date.now()+3600000})};}attempts.push(JSON.parse(options.body));if(first){first=false;return {ok:false,status:401};}return {ok:true,status:202};};const c=createSessionTelemetry({fetchImpl,getSnapshot:snapshot,enabled:true});c.start();await vi.advanceTimersByTimeAsync(2001);expect(sessionRequests).toBe(2);expect(attempts[0].eventId).toBe(attempts[1].eventId);c.stop();});
+
+test('window blur and focus report presence immediately without blocking the editor',async()=>{
+ vi.useFakeTimers();let focused=true;const windowEvents=new EventTarget(),doc=new EventTarget();doc.visibilityState='visible';doc.hasFocus=()=>focused;
+ vi.stubGlobal('addEventListener',windowEvents.addEventListener.bind(windowEvents));vi.stubGlobal('removeEventListener',windowEvents.removeEventListener.bind(windowEvents));
+ const sent=[];const client=createSessionTelemetry({documentRef:doc,enabled:true,getSnapshot:snapshot,fetchImpl:async(url,options)=>url.endsWith('/session')?{ok:true,json:async()=>({token:'t',expiresAt:Date.now()+3600000})}:(sent.push(JSON.parse(options.body)),{ok:true,status:202})});
+ client.start();await vi.advanceTimersByTimeAsync(1);expect(sent.at(-1).snapshot.focused).toBe(true);
+ focused=false;windowEvents.dispatchEvent(new Event('blur'));await vi.advanceTimersByTimeAsync(1);expect(sent.at(-1).snapshot.focused).toBe(false);
+ focused=true;windowEvents.dispatchEvent(new Event('focus'));await vi.advanceTimersByTimeAsync(1);expect(sent.at(-1).snapshot.focused).toBe(true);
+ client.stop();const count=sent.length;windowEvents.dispatchEvent(new Event('blur'));await vi.advanceTimersByTimeAsync(1);expect(sent).toHaveLength(count);
+});

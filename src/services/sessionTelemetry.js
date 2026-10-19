@@ -25,7 +25,7 @@ export function createSessionTelemetry({fetchImpl=(...args)=>fetch(...args),getS
   const enqueue=(type,override)=>{
     if(!running)return;
     try{
-      const snapshot={...(override||getSnapshot()),editingActivity:editingActivity.snapshot(),visibility:documentRef?.visibilityState==='hidden'?'hidden':'visible'};
+      const snapshot={...(override||getSnapshot()),editingActivity:editingActivity.snapshot(),visibility:documentRef?.visibilityState==='hidden'?'hidden':'visible',focused:typeof documentRef?.hasFocus==='function'?documentRef.hasFocus():null};
       const raw={version:1,clientVersion:CLIENT_VERSION,eventId:newId(),machineId,sessionId,appId,studentName:getStudentName(),sequence:++sequence,type,sentAt:Date.now(),snapshot};
       if(new TextEncoder().encode(JSON.stringify(raw)).length>MAX_EVENT_BYTES){status('too_large');return;}
       const event=validateEvent(raw);
@@ -61,8 +61,8 @@ export function createSessionTelemetry({fetchImpl=(...args)=>fetch(...args),getS
   const visibility=()=>enqueue('heartbeat');
   return {
     machineId,sessionId,pendingCount:()=>queue.length,
-    start(){if(running||!enabled){status(enabled?'offline':'disabled');return;}running=true;editingActivity.start();status('connecting');enqueue('session_started');heartbeat=setInterval(()=>enqueue('heartbeat'),15000);sampling=setInterval(sample,30000);globalThis.addEventListener?.('online',online);documentRef?.addEventListener('visibilitychange',visibility);},
+    start(){if(running||!enabled){status(enabled?'offline':'disabled');return;}running=true;editingActivity.start();status('connecting');enqueue('session_started');heartbeat=setInterval(()=>enqueue('heartbeat'),15000);sampling=setInterval(sample,30000);globalThis.addEventListener?.('online',online);globalThis.addEventListener?.('focus',visibility);globalThis.addEventListener?.('blur',visibility);documentRef?.addEventListener('visibilitychange',visibility);},
     changed(type='snapshot',override){if(running&&(type!=='snapshot'||override))enqueue(type,override);},
-    stop(){running=false;editingActivity.stop();clearTimeout(retry);clearInterval(heartbeat);clearInterval(sampling);retry=null;controller?.abort();queue=[];globalThis.removeEventListener?.('online',online);documentRef?.removeEventListener('visibilitychange',visibility);},
+    stop(){running=false;editingActivity.stop();clearTimeout(retry);clearInterval(heartbeat);clearInterval(sampling);retry=null;controller?.abort();queue=[];globalThis.removeEventListener?.('online',online);globalThis.removeEventListener?.('focus',visibility);globalThis.removeEventListener?.('blur',visibility);documentRef?.removeEventListener('visibilitychange',visibility);},
   };
 }
