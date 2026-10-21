@@ -1,0 +1,22 @@
+import {fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {vi,test,expect,afterEach} from 'vitest';
+import AssignmentWorkspace from './AssignmentWorkspace.jsx';
+afterEach(()=>{vi.unstubAllGlobals();localStorage.clear();});
+test('generates a seeded task, edits files and requires student ID for an immutable submission',async()=>{
+  const task={id:'test-task',templateId:'java-array',generatorVersion:'1',difficulty:'standard',seed:'KLASA-A',index:0,title:'Suma',prompt:'Policz sumę.',criteria:['Obsłuż pustą tablicę.'],starterFiles:{'Main.java':'start'},params:{}};
+  vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>({assignment:task})})));
+  const submit=vi.fn(async()=> 'submission'),flush=vi.fn(async()=>{});
+  render(<AssignmentWorkspace appId="java-lab" onBack={()=>{}} clientFactory={()=>({start(){},stop(){},submit,flush})}/>);
+  fireEvent.change(screen.getByLabelText('Seed zestawu'),{target:{value:'KLASA-A'}});
+  fireEvent.change(screen.getByLabelText('Liczba zadań'),{target:{value:'1'}});
+  fireEvent.click(screen.getByRole('button',{name:'Generuj zestaw'}));
+  await screen.findByText('Policz sumę.');
+  expect(fetch.mock.calls[0][0]).toBe('/api/assignments');
+  fireEvent.change(screen.getByLabelText('Kod pliku Main.java'),{target:{value:'my solution'}});
+  fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
+  expect(submit).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByLabelText('Twoje ID ucznia'),{target:{value:'3A-12'}});
+  fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
+  await waitFor(()=>expect(submit).toHaveBeenCalledWith(expect.objectContaining({studentId:'3A-12',files:{'Main.java':'my solution'}})));
+  expect(screen.queryByText('Rozwiązanie referencyjne')).toBeNull();
+});

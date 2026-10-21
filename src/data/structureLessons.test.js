@@ -21,6 +21,12 @@ describe('structure lessons', () => {
     });
   });
 
+  it('explains key and required-column settings before asking students to use them', () => {
+    const theory = STRUCTURE_LESSONS[0].theory;
+    expect(theory).toMatch(/PRIMARY KEY.*identyfikuje/i);
+    expect(theory).toMatch(/NOT NULL.*wymaga/i);
+  });
+
   it('executes every schema task in course order and validates the resulting SQLite schema', async () => {
     const { db, destroy } = await createSqliteDatabase(DATASET_MAP['structure-lab'], initSqlJsForTest, () => wasmPath);
 
