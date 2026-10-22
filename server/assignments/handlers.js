@@ -13,7 +13,8 @@ export function createAssignmentHandlers({env=process.env,appId='java-lab',publi
   const guard=(req,res)=>{
     if(req.method!=='POST'){send(res,405,{message:'Wymagany POST.'});return false;}
     const origins=(env.TELEMETRY_ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean);
-    if(!origins.includes(req.headers.origin)){send(res,403,{message:'Niedozwolone źródło.'});return false;}
+    let sameOrigin=false;try{sameOrigin=!!req.headers.origin&&new URL(req.headers.origin).host===req.headers.host;}catch{}
+    if(!sameOrigin&&!origins.includes(req.headers.origin)){send(res,403,{message:'Niedozwolone źródło.'});return false;}
     if(!req.headers['content-type']?.startsWith('application/json')){send(res,415,{message:'Wymagany JSON.'});return false;}
     return true;
   };

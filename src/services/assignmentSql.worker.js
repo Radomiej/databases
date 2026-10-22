@@ -5,8 +5,8 @@ self.onmessage=async({data})=>{
   try{
     const database=await createSqliteDatabase({seedSql:data.seedSql});destroy=database.destroy;
     database.db.run('PRAGMA query_only = ON;');
+    const started=performance.now();
     const result=runTrainingQuery(database.db,data.sql);
-    if(!result.ok)throw Error(result.message);
-    self.postMessage({output:JSON.stringify({columns:result.columns,rows:result.rows},null,2)});
+    self.postMessage({result:{...result,rowCount:result.rows?.length??0,durationMs:performance.now()-started}});
   }catch(error){self.postMessage({error:error.message});}finally{destroy?.();}
 };

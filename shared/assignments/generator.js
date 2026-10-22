@@ -6,7 +6,7 @@ function rng(seed){let state=hash(seed);return ()=>{state=(state+0x6d2b79f5)|0;l
 export function normalizeDescriptor(input={}){
   const {templateId,difficulty='standard',generatorVersion=GENERATOR_VERSION,index=0}=input;
   const seed=typeof input.seed==='string'?input.seed.trim():'';
-  if(generatorVersion!==GENERATOR_VERSION||!templates.some(t=>t.id===templateId)||!['easy','standard','challenge'].includes(difficulty)||!seed||seed.length>80||!Number.isInteger(index)||index<0||index>9)throw Error('Nieprawidłowy szablon, wersja, seed lub poziom zadania.');
+  if(!['1',GENERATOR_VERSION].includes(generatorVersion)||!templates.some(t=>t.id===templateId)||!['easy','standard','challenge'].includes(difficulty)||!seed||seed.length>80||!Number.isInteger(index)||index<0||index>9)throw Error('Nieprawidłowy szablon, wersja, seed lub poziom zadania.');
   return {generatorVersion,templateId,seed,difficulty,index};
 }
 export function generateAssignment(input){
@@ -79,6 +79,6 @@ export function generateAssignment(input){
     criteria=['Wynik ma wymagane kolumny i aliasy w podanej kolejności.','Warunki obejmują wskazane granice i wymagane sortowanie.','Nie zmieniaj schematu ani danych; oddaj zapytanie w answer.sql.'];
     starterFiles={'answer.sql':'-- TODO: napisz jedno zapytanie SELECT\n'};referenceFiles={'answer.sql':sql};
   }
-  return {...descriptor,id:`${templateId}-v1-${hash(JSON.stringify(descriptor)).toString(16)}${hash('identity:'+JSON.stringify(descriptor)).toString(16)}`,title,prompt,criteria,starterFiles,referenceFiles,params};
+  return {...descriptor,id:`${templateId}-v${descriptor.generatorVersion}-${hash(JSON.stringify(descriptor)).toString(16)}${hash('identity:'+JSON.stringify(descriptor)).toString(16)}`,title,prompt,criteria,starterFiles,referenceFiles,params};
 }
 export function publicAssignment(assignment){const {referenceFiles,...publicTask}=assignment;return publicTask;}

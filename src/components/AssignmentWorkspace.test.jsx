@@ -1,22 +1,37 @@
 import {fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {vi,test,expect,afterEach} from 'vitest';
 import AssignmentWorkspace from './AssignmentWorkspace.jsx';
-afterEach(()=>{vi.unstubAllGlobals();localStorage.clear();});
+afterEach(()=>{vi.unstubAllGlobals();localStorage.clear();history.replaceState(null,'','#/');});
 test('generates a seeded task, edits files and requires student ID for an immutable submission',async()=>{
-  const task={id:'test-task',templateId:'java-array',generatorVersion:'1',difficulty:'standard',seed:'KLASA-A',index:0,title:'Suma',prompt:'Policz sumę.',criteria:['Obsłuż pustą tablicę.'],starterFiles:{'Main.java':'start'},params:{}};
+  const task={id:'test-task',templateId:'sql-select',generatorVersion:'1',difficulty:'standard',seed:'KLASA-A',index:0,title:'Wybierz produkty',prompt:'Wybierz kolumny.',criteria:['Zwróć wymagane kolumny.'],starterFiles:{'answer.sql':'-- TODO\n'},params:{seedSql:'CREATE TABLE produkty(id INTEGER);'}};
   vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>({assignment:task})})));
   const submit=vi.fn(async()=> 'submission'),flush=vi.fn(async()=>{});
-  render(<AssignmentWorkspace appId="java-lab" onBack={()=>{}} clientFactory={()=>({start(){},stop(){},submit,flush})}/>);
+  render(<AssignmentWorkspace appId="databases" onBack={()=>{}} clientFactory={()=>({start(){},stop(){},submit,flush})}/>);
   fireEvent.change(screen.getByLabelText('Seed zestawu'),{target:{value:'KLASA-A'}});
   fireEvent.change(screen.getByLabelText('Liczba zadań'),{target:{value:'1'}});
   fireEvent.click(screen.getByRole('button',{name:'Generuj zestaw'}));
-  await screen.findByText('Policz sumę.');
+  await screen.findByText('Wybierz kolumny.');
   expect(fetch.mock.calls[0][0]).toBe('/api/assignments');
-  fireEvent.change(screen.getByLabelText('Kod pliku Main.java'),{target:{value:'my solution'}});
+  fireEvent.change(screen.getByLabelText('Zapytanie SQL'),{target:{value:'SELECT 1'}});
   fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
   expect(submit).not.toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText('Twoje ID ucznia'),{target:{value:'3A-12'}});
   fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
-  await waitFor(()=>expect(submit).toHaveBeenCalledWith(expect.objectContaining({studentId:'3A-12',files:{'Main.java':'my solution'}})));
+  await waitFor(()=>expect(submit).toHaveBeenCalledWith(expect.objectContaining({studentId:'3A-12',files:{'answer.sql':'SELECT 1'}})));
   expect(screen.queryByText('Rozwiązanie referencyjne')).toBeNull();
+});
+
+test('reads the requested level from the link, hides details, and generates fresh individual variants',async()=>{
+ history.replaceState(null,'','#zadania?lekcja=select-limit&poziom=challenge');
+ localStorage.setItem('databases-assignment-identity',JSON.stringify({studentId:'3A-12'}));
+ const task={id:'sql-task',templateId:'sql-select',generatorVersion:'1',difficulty:'easy',seed:'generated',index:0,title:'Wybierz',prompt:'Wczytaj dane.',criteria:['Pokaż wynik.'],starterFiles:{'answer.sql':''},params:{}};
+ vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>({assignment:task})})));
+ render(<AssignmentWorkspace appId="databases" onBack={()=>{}} clientFactory={()=>({start(){},stop(){},submit:async()=>'',flush:async()=>{}})}/>);
+ const slider=screen.getByRole('slider');expect(slider).toHaveValue('2');expect(slider).toHaveAttribute('aria-valuetext','Wyzwanie');
+ expect(screen.getByText('Szczegóły zestawu').closest('details')).not.toHaveAttribute('open');
+ fireEvent.change(slider,{target:{value:'0'}});fireEvent.change(screen.getByLabelText('Liczba zadań'),{target:{value:'1'}});
+ fireEvent.click(screen.getByRole('button',{name:'Generuj zestaw'}));await screen.findByText('Wczytaj dane.');
+ const first=JSON.parse(fetch.mock.calls[0][1].body);expect(first).toMatchObject({templateId:'sql-select',difficulty:'easy'});expect(first.seed).toContain('3A-12');
+ fireEvent.click(screen.getByRole('button',{name:'Generuj zestaw'}));await waitFor(()=>expect(fetch).toHaveBeenCalledTimes(2));
+ expect(JSON.parse(fetch.mock.calls[1][1].body).seed).not.toBe(first.seed);
 });

@@ -14,9 +14,12 @@ function Sidebar({
   progress,
   onOpenSettings,
   onOpenHelp,
+  onNavigate,
 }) {
   const selectedDataset = datasets.find((dataset) => dataset.id === selectedDatasetId);
+  const selectedLesson = lessons.find((lesson) => lesson.id === selectedLessonId);
   const completedCount = Object.values(progress ?? {}).filter(Boolean).length;
+  const generatorLevel = { Podstawowy: 'easy', Średni: 'standard', Rozszerzony: 'challenge' }[selectedLesson?.difficulty] ?? 'standard';
 
   return (
     <div className="sidebar-content">
@@ -86,6 +89,8 @@ function Sidebar({
           })}
         </div>
       </div>
+
+      <a className="sidebar-generator" href={`#zadania?lekcja=${encodeURIComponent(selectedLessonId)}&poziom=${generatorLevel}`} onClick={onNavigate}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h4m3 1v6m-3-3h6"/></svg>Generator zadań</a>
 
       <div className="sidebar-footer">
         <div className="sidebar-footnote">

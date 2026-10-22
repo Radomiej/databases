@@ -35,7 +35,7 @@ npm install
 npm run dev
 ```
 
-Otwórz `http://localhost:5173`. Tryb SQLite działa od razu.
+Otwórz `http://localhost:5186`. Tryb SQLite działa od razu.
 
 Jeżeli chcesz używać connectora MySQL, w drugim terminalu uruchom:
 
@@ -49,7 +49,7 @@ Możesz też uruchomić oba procesy jednym poleceniem:
 npm run dev:all
 ```
 
-Backend działa wyłącznie lokalnie na `http://localhost:3001`.
+Backend działa wyłącznie lokalnie na `http://localhost:5187`.
 
 ## Korepetytor AI
 
@@ -79,7 +79,7 @@ MYSQL_USER=root
 MYSQL_PASSWORD=
 MYSQL_ALLOW_MUTATIONS=false
 MYSQL_ALLOW_SCHEMA_MUTATIONS=false
-PORT=3001
+PORT=5187
 ```
 
 Możesz również wpisać dane bezpośrednio w formularzu connectora. Hasło pozostaje w pamięci aplikacji i nie jest zapisywane. Zaznaczenie „Zapamiętaj pozostałe pola” zapisuje tylko host, port, nazwę bazy i użytkownika.

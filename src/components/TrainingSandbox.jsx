@@ -21,7 +21,7 @@ function restoreWork(session) {
   return { active: session.tasks[0].id, drafts: {}, passed: {} };
 }
 
-export default function TrainingSandbox({ session, onBack, onNew, onTutorContextChange, createDatabase = createSqliteDatabase }) {
+export default function TrainingSandbox({ session, onBack, onNew, createDatabase = createSqliteDatabase }) {
   const [work, setWork] = useState(() => restoreWork(session));
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState('');
@@ -40,14 +40,6 @@ export default function TrainingSandbox({ session, onBack, onNew, onTutorContext
   const telemetrySnapshot=sqlSnapshot({lesson:{id:'training-'+session.options.seed,title:task.lessonTitle||'Trening SQL',order:task.lessonOrder},task,sql,result,status,progress:{completed:session.tasks.filter(entry=>work.passed[entry.id]).length,total:session.tasks.length},passed:work.passed[task.id]?true:null});
   const telemetry=useSessionTelemetry(telemetrySnapshot);
   const completed = session.tasks.filter((entry) => work.passed[entry.id]).length;
-
-  useEffect(() => {
-    onTutorContextChange?.({
-      lesson: { order: task.lessonOrder, title: task.lessonTitle, theory: '', syntax: [] },
-      task: { title: task.title, prompt: task.prompt, hint: session.options.hints ? task.hint : '' },
-      schema: session.dataset.tables,
-    });
-  }, [onTutorContextChange, session, task]);
 
   useEffect(() => {
     let current = true, destroyDatabase;

@@ -50,10 +50,12 @@ function SqlEditor({ value, onChange, onRun, onCheck, onReset, onShowSolution, s
             Uruchom
             <span className="shortcut-hint">Ctrl ↵</span>
           </button>
-          <button type="button" className="btn btn-editor-secondary" onClick={onCheck} disabled={disabled}>
-            <i className="bi bi-check2" aria-hidden="true" />
-            Sprawdź
-          </button>
+          {onCheck && (
+            <button type="button" className="btn btn-editor-secondary" onClick={onCheck} disabled={disabled}>
+              <i className="bi bi-check2" aria-hidden="true" />
+              Sprawdź
+            </button>
+          )}
         </div>
         <div className="editor-actions-secondary">
           <button type="button" className="btn btn-editor-secondary" onClick={onReset} disabled={disabled}>
