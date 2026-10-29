@@ -27,6 +27,7 @@ export function createSubmissionClient({store=createIndexedOutbox(),fetchImpl=(.
   return {
     async submit({assignment,studentId,studentName='',files}){
       if(typeof studentId!=='string'||!studentId.trim()||studentId.trim().length>80)throw Error('Podaj swoje ID ucznia (do 80 znaków).');
+      if(typeof studentName!=='string'||!studentName.trim()||studentName.trim().length>80)throw Error('Podaj imię i nazwisko (do 80 znaków).');
       const submissionId=newId();
       const {generatorVersion,templateId,seed,difficulty,index}=assignment;
       const message=JSON.parse(JSON.stringify({submissionId,eventId:submissionId,appId,machineId,sessionId,studentId:studentId.trim(),studentName:studentName.trim(),sentAt:Date.now(),assignment:{generatorVersion,templateId,seed,difficulty,index},files}));

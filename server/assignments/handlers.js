@@ -13,8 +13,10 @@ export function createAssignmentHandlers({env=process.env,appId='java-lab',publi
   const guard=(req,res)=>{
     if(req.method!=='POST'){send(res,405,{message:'Wymagany POST.'});return false;}
     const origins=(env.TELEMETRY_ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean);
-    let sameOrigin=false;try{sameOrigin=!!req.headers.origin&&new URL(req.headers.origin).host===req.headers.host;}catch{}
-    if(!sameOrigin&&!origins.includes(req.headers.origin)){send(res,403,{message:'Niedozwolone źródło.'});return false;}
+    let sameOrigin=false,loopback=false;
+    try{const origin=new URL(req.headers.origin);const isLoopback=name=>['127.0.0.1','localhost','[::1]'].includes(name);
+      sameOrigin=origin.host===req.headers.host;loopback=isLoopback(origin.hostname)&&isLoopback(new URL(`http://${req.headers.host||'x'}`).hostname);}catch{}
+    if(!sameOrigin&&!loopback&&!origins.includes(req.headers.origin)){send(res,403,{message:'Niedozwolone źródło.'});return false;}
     if(!req.headers['content-type']?.startsWith('application/json')){send(res,415,{message:'Wymagany JSON.'});return false;}
     return true;
   };

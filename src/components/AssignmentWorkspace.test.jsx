@@ -13,11 +13,20 @@ test('generates a seeded task, edits files and requires student ID for an immuta
   await screen.findByText('Wybierz kolumny.');
   expect(fetch.mock.calls[0][0]).toBe('/api/assignments');
   fireEvent.change(screen.getByLabelText('Zapytanie SQL'),{target:{value:'SELECT 1'}});
+  expect(screen.getByRole('tab',{name:/Wybierz produkty/})).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Sprawdź'})).toBeEnabled();
+  expect(screen.queryByRole('button',{name:'Oddaj do oceny'})).toBeNull();
+  expect(screen.queryByRole('button',{name:'Pobierz kopię'})).toBeNull();
+  fireEvent.click(screen.getByRole('checkbox',{name:'Ocena'}));
   fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
   expect(submit).not.toHaveBeenCalled();
-  fireEvent.change(screen.getByLabelText('Twoje ID ucznia'),{target:{value:'3A-12'}});
+  fireEvent.change(screen.getByLabelText('ID ucznia (klasa i numer)'),{target:{value:'3A-12'}});
   fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
-  await waitFor(()=>expect(submit).toHaveBeenCalledWith(expect.objectContaining({studentId:'3A-12',files:{'answer.sql':'SELECT 1'}})));
+  expect(submit).not.toHaveBeenCalled();
+  expect(screen.getByRole('alert')).toHaveTextContent('imię i nazwisko');
+  fireEvent.change(screen.getByLabelText('Imię i nazwisko'),{target:{value:'Jan Kowalski'}});
+  fireEvent.click(screen.getByRole('button',{name:'Oddaj do oceny'}));
+  await waitFor(()=>expect(submit).toHaveBeenCalledWith(expect.objectContaining({studentId:'3A-12',studentName:'Jan Kowalski',files:{'answer.sql':'SELECT 1'}})));
   expect(screen.queryByText('Rozwiązanie referencyjne')).toBeNull();
 });
 

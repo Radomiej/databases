@@ -9,29 +9,36 @@ test('offline outbox preserves exact code and IDs across reload and retry; accep
   const fetchImpl=async(path,options)=>{if(offline)throw Error('offline');const body=JSON.parse(options.body);if(path.endsWith('/session'))return {ok:true,json:async()=>({token:'test',expiresAt:Date.now()+1000000})};posted.push(body);return {ok:true,status:202,json:async()=>({accepted:true,submissionId:body.submissionId,status:'broker_accepted'})};};
   const client=createSubmissionClient({store,fetchImpl,machineId:uuid,sessionId:uuid,appId:'java-lab'});
   const files={'Main.java':'original'};
-  const id=await client.submit({assignment:task,studentId:'3A-12',files});files['Main.java']='changed';
+  const id=await client.submit({assignment:task,studentId:'3A-12',studentName:'Jan Kowalski',files});files['Main.java']='changed';
   await client.flush();assert.equal((await store.list())[0].status,'queued');
   client.stop();offline=false;
   const reloaded=createSubmissionClient({store,fetchImpl,machineId:uuid,sessionId:'22222222-2222-4222-8222-222222222222',appId:'java-lab'});
   await reloaded.flush();
-  assert.equal(posted[0].submissionId,id);assert.equal(posted[0].files['Main.java'],'original');assert.equal(posted[0].sessionId,uuid);
+  assert.equal(posted[0].submissionId,id);assert.equal(posted[0].files['Main.java'],'original');assert.equal(posted[0].sessionId,uuid);assert.equal(posted[0].studentName,'Jan Kowalski');
   assert.equal((await store.list())[0].status,'broker_accepted');
   await reloaded.flush();assert.equal(posted.length,1);
 });
 test('failed persistent storage never pretends work was queued',async()=>{
   const client=createSubmissionClient({store:{list:async()=>[],put:async()=>{throw Error('storage denied');}},machineId:uuid,sessionId:uuid,appId:'java-lab'});
-  await assert.rejects(client.submit({assignment:task,studentId:'A',files:{'Main.java':'x'}}),/storage denied/);
+  await assert.rejects(client.submit({assignment:task,studentId:'A',studentName:'B',files:{'Main.java':'x'}}),/storage denied/);
+});
+test('missing student ID or name never enters the outbox',async()=>{
+  const store=memory();const client=createSubmissionClient({store,machineId:uuid,sessionId:uuid,appId:'java-lab'});
+  await assert.rejects(client.submit({assignment:task,studentId:'',studentName:'B',files:{'Main.java':'x'}}),/ID ucznia/);
+  await assert.rejects(client.submit({assignment:task,studentId:'A',files:{'Main.java':'x'}}),/imię i nazwisko/);
+  await assert.rejects(client.submit({assignment:task,studentId:'A',studentName:'  ',files:{'Main.java':'x'}}),/imię i nazwisko/);
+  assert.equal((await store.list()).length,0);
 });
 test('retry keeps submission ID and an API validation failure does not endlessly retry',async()=>{
   const store=memory();let posts=0;
   const client=createSubmissionClient({store,machineId:uuid,sessionId:uuid,appId:'java-lab',fetchImpl:async path=>path.endsWith('/session')?{ok:true,json:async()=>({token:'t',expiresAt:Date.now()+1000000})}:{ok:false,status:400,json:async()=>{posts++;return {message:'old version'};}}});
-  await client.submit({assignment:task,studentId:'A',files:{'Main.java':'x'}});await client.flush();await client.flush();
+  await client.submit({assignment:task,studentId:'A',studentName:'B',files:{'Main.java':'x'}});await client.flush();await client.flush();
   assert.equal(posts,1);assert.equal((await store.list())[0].status,'rejected');
 });
 test('history cleanup never deletes rejected work that has not reached RabbitMQ',async()=>{
   const rows=Array.from({length:55},(_,index)=>({id:`rejected-${index}`,status:'rejected',message:{sentAt:index}})),removed=[];
   const store={list:async()=>rows,put:async row=>rows.push(row),remove:async id=>removed.push(id)};
   const client=createSubmissionClient({store,machineId:uuid,sessionId:uuid,appId:'java-lab'});
-  await client.submit({assignment:task,studentId:'A',files:{'Main.java':'x'}});
+  await client.submit({assignment:task,studentId:'A',studentName:'B',files:{'Main.java':'x'}});
   assert.deepEqual(removed,[]);
 });
