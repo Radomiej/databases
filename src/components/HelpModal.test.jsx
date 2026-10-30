@@ -2,13 +2,14 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import HelpModal from './HelpModal.jsx';
 
-it('explains the course flow and distinguishes SQLite checking from MySQL practice', () => {
+it('explains the course flow and the MySQL export path', () => {
   render(<HelpModal open onClose={vi.fn()} />);
 
   expect(screen.getByRole('dialog', { name: 'Jak korzystać z SQL Learning Lab' })).toBeInTheDocument();
   expect(screen.getByText(/Zadanie pokazowe/i)).toBeInTheDocument();
   expect(screen.getAllByText(/w trybie SQLite/i).length).toBeGreaterThan(0);
-  expect(screen.getAllByText(/MySQL/i).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Eksport do MySQL/i).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/phpMyAdmin/i).length).toBeGreaterThan(0);
   expect(screen.getByText(/W zadaniu pokazowym możesz zobaczyć rozwiązanie; w samodzielnym przycisk „Rozwiązanie” jest ukryty, ale „Sprawdź” nadal ocenia Twoje zapytanie/)).toBeInTheDocument();
 });
 

@@ -15,13 +15,9 @@ function validateLimit(limit) {
   return normalizedLimit;
 }
 
-export function buildTablePreviewSql(tableName, dialect = 'sqlite', limit = DEFAULT_PREVIEW_LIMIT) {
+export function buildTablePreviewSql(tableName, limit = DEFAULT_PREVIEW_LIMIT) {
   const normalizedName = validateTableName(tableName);
   const normalizedLimit = validateLimit(limit);
-  if (dialect !== 'sqlite' && dialect !== 'mysql') throw new Error('Nieobsługiwany silnik podglądu tabeli.');
-
-  const identifier = dialect === 'mysql'
-    ? `\`${normalizedName.replaceAll('`', '``')}\``
-    : `"${normalizedName.replaceAll('"', '""')}"`;
+  const identifier = `"${normalizedName.replaceAll('"', '""')}"`;
   return `SELECT * FROM ${identifier} LIMIT ${normalizedLimit};`;
 }

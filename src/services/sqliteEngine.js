@@ -106,7 +106,7 @@ export function executeSqliteQuery(db, sql) {
   }
 }
 
-function quoteSqliteIdentifier(identifier) {
+export function quoteSqliteIdentifier(identifier) {
   return `"${String(identifier).replaceAll('"', '""')}"`;
 }
 
