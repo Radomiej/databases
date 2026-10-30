@@ -36,10 +36,10 @@ function TableOptionsMenu({ tableName, onPreviewTable, previewDisabled }) {
   );
 }
 
-function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite', databaseLabel, onAddTable, onPreviewTable, previewDisabled = false, onEditRelationships, relationshipsReadOnly = false, allowTableCreation = true }) {
+function SchemaPanel({ schema = [], dataset, relationships = [], databaseLabel, onAddTable, onPreviewTable, previewDisabled = false, onEditRelationships, allowTableCreation = true }) {
   const [activeTab, setActiveTab] = useState('tables');
   const [search, setSearch] = useState('');
-  const availableTables = schema.length > 0 ? schema : mode === 'sqlite' ? dataset.tables : [];
+  const availableTables = schema.length > 0 ? schema : dataset.tables;
   const visibleTables = useMemo(() => availableTables.filter((table) => table.name.toLowerCase().includes(search.trim().toLowerCase())), [availableTables, search]);
   const relationList = Array.isArray(relationships) ? relationships : [];
 
@@ -49,7 +49,7 @@ function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite'
         <div className="inspector-heading-icon"><i className="bi bi-database-fill" aria-hidden="true" /></div>
         <div>
           <h2>Schemat bazy</h2>
-          <p>{databaseLabel ?? dataset.name} · {schema.length || (mode === 'sqlite' ? dataset.tables.length : 0)} tabel</p>
+          <p>{databaseLabel ?? dataset.name} · {schema.length || dataset.tables.length} tabel</p>
         </div>
       </div>
       <div className="inspector-tabs" role="tablist" aria-label="Widoki schematu">
@@ -65,7 +65,7 @@ function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite'
               <label className="visually-hidden" htmlFor="schema-search">Szukaj tabeli</label>
               <input id="schema-search" className="schema-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Szukaj tabeli..." />
             </div>
-            {mode === 'sqlite' && allowTableCreation && <button type="button" className="schema-add-button" onClick={onAddTable} title="Dodaj własną tabelę"><i className="bi bi-plus-lg" aria-hidden="true" /></button>}
+            {allowTableCreation && <button type="button" className="schema-add-button" onClick={onAddTable} title="Dodaj własną tabelę"><i className="bi bi-plus-lg" aria-hidden="true" /></button>}
           </div>
           <div className="schema-table-list">
             {visibleTables.map((tableItem) => (
@@ -92,7 +92,7 @@ function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite'
                 </div>
               </div>
             ))}
-            {!visibleTables.length && <div className="schema-no-match">{mode === 'mysql' ? 'Połącz connector, aby pobrać tabele.' : `Nie znaleziono tabeli dla „${search}”.`}</div>}
+            {!visibleTables.length && <div className="schema-no-match">{`Nie znaleziono tabeli dla „${search}”.`}</div>}
           </div>
         </>
       )}
@@ -101,7 +101,7 @@ function SchemaPanel({ schema = [], dataset, relationships = [], mode = 'sqlite'
         <div className="relations-panel">
           <div className="relations-toolbar">
             <div><strong>Relacje tabel</strong><small>{relationList.length} połączeń</small></div>
-            {relationshipsReadOnly ? <span className="relations-readonly"><i className="bi bi-lock" aria-hidden="true" /> Tylko odczyt</span> : onEditRelationships && <button type="button" className="relations-edit-button" onClick={onEditRelationships}><i className="bi bi-pencil-square" aria-hidden="true" /> Edytuj relacje</button>}
+            {onEditRelationships && <button type="button" className="relations-edit-button" onClick={onEditRelationships}><i className="bi bi-pencil-square" aria-hidden="true" /> Edytuj relacje</button>}
           </div>
           <div className="relations-list">
             {relationList.map((relationship) => (

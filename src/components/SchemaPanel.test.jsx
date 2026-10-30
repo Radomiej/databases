@@ -18,7 +18,6 @@ function renderPanel(overrides = {}) {
       schema={[table]}
       dataset={dataset}
       relationships={[]}
-      mode="sqlite"
       onAddTable={vi.fn()}
       onPreviewTable={vi.fn()}
       onEditRelationships={vi.fn()}
@@ -62,11 +61,11 @@ describe('SchemaPanel', () => {
     expect(onEditRelationships).toHaveBeenCalledTimes(1);
   });
 
-  it('marks MySQL relationships as read-only', () => {
-    renderPanel({ mode: 'mysql', relationships: [{ from: 'ksiazki.autor_id', to: 'autorzy.id' }], relationshipsReadOnly: true });
+  it('hides the relationship editor when no handler is provided', () => {
+    renderPanel({ relationships: [{ from: 'ksiazki.autor_id', to: 'autorzy.id' }], onEditRelationships: undefined });
 
     fireEvent.click(screen.getByRole('tab', { name: 'Relacje' }));
-    expect(screen.getByText('Tylko odczyt')).toBeInTheDocument();
+    expect(screen.getByText('ksiazki.autor_id')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Edytuj relacje/i })).not.toBeInTheDocument();
   });
 });

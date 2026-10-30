@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDataset } from '../data/datasets.js';
-import { createSqliteDatabase, executeSqliteQuery, getSqliteSchema } from '../services/sqliteEngine.js';
+import { createSqliteDatabase, executeSqliteQuery, getSqliteSchema, quoteSqliteIdentifier } from '../services/sqliteEngine.js';
 import { buildCreateTableSql } from '../services/schemaBuilder.js';
 import { applySqliteRelationships } from '../services/sqliteRelations.js';
 
@@ -89,6 +89,14 @@ export function useSqliteDatabase(datasetId, customTables = [], relationships = 
     return result;
   }, []);
 
+  const dump = useCallback(() => {
+    if (!databaseRef.current) return null;
+    return getSqliteSchema(databaseRef.current.db).map((table) => ({
+      ...table,
+      rows: databaseRef.current.db.exec(`SELECT * FROM ${quoteSqliteIdentifier(table.name)};`)[0]?.values ?? [],
+    }));
+  }, []);
+
   return {
     status: state.status,
     error: state.error,
@@ -97,5 +105,6 @@ export function useSqliteDatabase(datasetId, customTables = [], relationships = 
     execute,
     reset,
     applyRelationships,
+    dump,
   };
 }

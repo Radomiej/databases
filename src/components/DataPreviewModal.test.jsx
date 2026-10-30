@@ -15,7 +15,6 @@ describe('DataPreviewModal', () => {
         open
         table={table}
         databaseLabel="Biblioteka"
-        mode="sqlite"
         result={{ ok: true, columns: ['id', 'data_zwrotu'], rows: [[1, null]], rowCount: 1, durationMs: 1.2 }}
         loading={false}
         onClose={vi.fn()}
@@ -33,7 +32,7 @@ describe('DataPreviewModal', () => {
 
   it('renders the loading and error states', () => {
     const { rerender } = render(
-      <DataPreviewModal open table={table} databaseLabel="inf03_lab" mode="mysql" result={null} loading onClose={vi.fn()} onRefresh={vi.fn()} />,
+      <DataPreviewModal open table={table} databaseLabel="inf03_lab" result={null} loading onClose={vi.fn()} onRefresh={vi.fn()} />,
     );
     expect(screen.getByText('Pobieram dane tabeli…')).toBeInTheDocument();
 
@@ -42,7 +41,6 @@ describe('DataPreviewModal', () => {
         open
         table={table}
         databaseLabel="inf03_lab"
-        mode="mysql"
         result={{ ok: false, message: 'Brak połączenia', hint: 'Uruchom MySQL.' }}
         loading={false}
         onClose={vi.fn()}

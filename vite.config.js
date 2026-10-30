@@ -1,6 +1,7 @@
 import {buildClientVersion} from './server/clientVersion.js';
 import {telemetryPlugin} from './server/telemetryPlugin.js';
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
@@ -23,5 +24,6 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
+    exclude: [...configDefaults.exclude, 'tests/**'],
   },
 });

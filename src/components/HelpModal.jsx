@@ -26,12 +26,11 @@ function HelpModal({ open = false, onClose }) {
         </header>
         <div className="modal-body-custom help-modal-body">
           <ol className="help-steps">
-            <li><strong>Wybierz tryb pracy.</strong><p><b>SQLite — nauka</b> działa lokalnie i pozwala sprawdzać zadania. <b>MySQL — connector</b> łączy się z wybranym serwerem po skonfigurowaniu połączenia.</p></li>
             <li><strong>Wybierz bazę i lekcję.</strong><p>Każda baza zawiera własne tabele i dane. Treść lekcji pokazuje aktualny zakres materiału.</p></li>
             <li><strong>Zacznij od zadania pokazowego.</strong><p><b>Zadanie pokazowe</b> ma rozwiązanie wczytane do edytora. Następne zadania rozwiązujesz samodzielnie; możesz skorzystać z podpowiedzi. W zadaniu pokazowym możesz zobaczyć rozwiązanie; w samodzielnym przycisk „Rozwiązanie” jest ukryty, ale „Sprawdź” nadal ocenia Twoje zapytanie.</p></li>
             <li><strong>Uruchom albo sprawdź zapytanie.</strong><p><b>Uruchom</b> pokazuje wynik SQL (skrót: Ctrl+Enter). <b>Sprawdź</b> ocenia odpowiedź w trybie SQLite i zalicza zadanie, jeśli wynik spełnia warunki.</p></li>
             <li><strong>Korzystaj ze schematu.</strong><p>Panel po prawej pokazuje tabele, kolumny, typy i relacje. Menu tabeli otwiera podgląd jej danych.</p></li>
-            <li><strong>Pracuj z MySQL ostrożnie.</strong><p>Najpierw uzupełnij dane połączenia i przetestuj connector. Ocena zadań jest dostępna w trybie SQLite; MySQL służy do ćwiczeń na wybranej bazie.</p></li>
+            <li><strong>Przenieś bazę do MySQL.</strong><p>Przycisk <b>Eksport do MySQL</b> w górnym pasku generuje skrypt SQL z aktualną bazą (tabele, relacje i rekordy). Skopiuj go lub pobierz i wklej w zakładce SQL w phpMyAdmin.</p></li>
           </ol>
           <div className="help-note"><i className="bi bi-info-circle-fill" aria-hidden="true" /><span>Twoje niewykonane szkice SQL zapisują się osobno dla każdego zadania. Historia obejmuje tylko zapytania, które uruchomisz lub sprawdzisz.</span></div>
         </div>

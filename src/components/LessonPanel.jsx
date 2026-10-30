@@ -45,10 +45,10 @@ function TaskDetails({ task }) {
   );
 }
 
-function LessonPanel({ lesson, dataset, databaseStatus, mode = 'sqlite', activeTaskId, taskProgress = {}, onTaskChange }) {
+function LessonPanel({ lesson, dataset, databaseStatus, activeTaskId, taskProgress = {}, onTaskChange }) {
   const [collapsedTaskId, setCollapsedTaskId] = useState(null);
-  const isReady = mode === 'mysql' ? databaseStatus === 'connected' : databaseStatus === 'ready';
-  const statusLabel = mode === 'mysql' ? (isReady ? 'MySQL połączony' : 'MySQL connector') : (isReady ? 'SQLite gotowe' : 'Przygotowuję SQLite');
+  const isReady = databaseStatus === 'ready';
+  const statusLabel = isReady ? 'SQLite gotowe' : 'Przygotowuję SQLite';
   const tasks = lesson.tasks?.length ? lesson.tasks : [{ id: `${lesson.id}-guided`, title: 'Zadanie', prompt: lesson.task }];
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks[0];
   const completedCount = tasks.filter((task) => taskProgress[getTaskProgressKey(lesson.id, task.id)]).length;

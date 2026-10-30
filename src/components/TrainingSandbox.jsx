@@ -77,7 +77,7 @@ export default function TrainingSandbox({ session, onBack, onNew, createDatabase
     }
   };
   const selectTask = (id) => { setWork((current) => ({ ...current, active: id })); setResult(null); setFeedback(null); setSidebarOpen(false); };
-  const previewTable = (name) => setPreview({ table: session.dataset.tables.find((table) => table.name === name), result: runTrainingQuery(database.current, buildTablePreviewSql(name, 'sqlite')) });
+  const previewTable = (name) => setPreview({ table: session.dataset.tables.find((table) => table.name === name), result: runTrainingQuery(database.current, buildTablePreviewSql(name)) });
   const sidebar = <div className="sidebar-content training-sidebar">
     <div className="brand-block"><div className="brand-mark"><i className="bi bi-lightning-charge-fill" /></div><div><div className="brand-name">Trening SQL</div><div className="brand-subtitle">Samodzielny sandbox</div></div></div>
     <StudentIdentity telemetry={telemetry}/>
@@ -87,7 +87,7 @@ export default function TrainingSandbox({ session, onBack, onNew, createDatabase
     <div className="training-seed"><span>Kod zestawu</span><code>{session.options.seed}</code><small>{session.source ? 'Zadania egzaminacyjne · dane ćwiczeniowe' : `${session.options.rows} wierszy w tabeli · ${session.options.difficulty === 'easy' ? 'Podstawowy' : session.options.difficulty === 'challenge' ? 'Wyzwanie' : 'Standardowy'}`}</small></div>
   </div>;
 
-  return <AppShell sidebar={sidebar} sidebarOpen={sidebarOpen} onSidebarClose={(value) => setSidebarOpen(value === true)} inspector={<SchemaPanel schema={session.dataset.tables} dataset={session.dataset} relationships={session.dataset.relationships ?? []} allowTableCreation={false} relationshipsReadOnly onPreviewTable={previewTable} previewDisabled={status !== 'ready'} />}>
+  return <AppShell sidebar={sidebar} sidebarOpen={sidebarOpen} onSidebarClose={(value) => setSidebarOpen(value === true)} inspector={<SchemaPanel schema={session.dataset.tables} dataset={session.dataset} relationships={session.dataset.relationships ?? []} allowTableCreation={false} onPreviewTable={previewTable} previewDisabled={status !== 'ready'} />}>
     <div className="main-toolbar"><div className="toolbar-dataset">Trening SQL <span className="toolbar-separator">/</span> {session.source ? session.source.title : `Lekcje ${session.options.start === session.options.end ? session.options.start : `${session.options.start}–${session.options.end}`}`}</div><button type="button" className="btn btn-training" onClick={onNew}><i className="bi bi-shuffle" /> Nowy zestaw</button></div>
     {session.source && <section className="alert alert-info"><p>{session.source.description}</p><a href={session.source.url} target="_blank" rel="noreferrer">Arkusz źródłowy</a></section>}
     <section className="training-task-card" aria-labelledby="training-task-title"><div className="training-task-kicker">Zadanie samodzielne · lekcja {task.lessonOrder}</div><h1 id="training-task-title">{task.title}: {task.lessonTitle}</h1><p>{task.prompt}</p><div className="training-expected">Wymagane kolumny: {task.expected.columns.map((column) => <code key={column}>{column}</code>)}</div>{session.options.hints && <details key={task.id}><summary>Podpowiedź</summary><p>{task.hint}</p></details>}<small>Wpisz własne zapytanie i wybierz „Sprawdź”. Oceniany jest wynik, nie identyczność kodu.</small></section>
@@ -97,6 +97,6 @@ export default function TrainingSandbox({ session, onBack, onNew, createDatabase
     <SqlEditor value={sql} onChange={changeSql} onRun={() => execute()} onCheck={() => execute(true)} onReset={() => { changeSql(''); setResult(null); setFeedback(null); }} showSolution={false} disabled={status !== 'ready'} />
     <FeedbackAlert feedback={feedback} />
     <ResultsPanel result={result} showHistory={false} />
-    <DataPreviewModal open={Boolean(preview)} table={preview?.table} result={preview?.result} databaseLabel={session.dataset.name} mode="sqlite" loading={false} onClose={() => setPreview(null)} onRefresh={() => previewTable(preview.table.name)} />
+    <DataPreviewModal open={Boolean(preview)} table={preview?.table} result={preview?.result} databaseLabel={session.dataset.name} loading={false} onClose={() => setPreview(null)} onRefresh={() => previewTable(preview.table.name)} />
   </AppShell>;
 }

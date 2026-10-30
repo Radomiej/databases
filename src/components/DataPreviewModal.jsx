@@ -19,7 +19,6 @@ function DataPreviewModal({
   open = false,
   table,
   databaseLabel,
-  mode = 'sqlite',
   result,
   loading = false,
   onClose,
@@ -50,7 +49,7 @@ function DataPreviewModal({
           <div className="data-preview-heading">
             <div className="data-preview-icon"><i className="bi bi-table" aria-hidden="true" /></div>
             <div>
-              <div className="data-preview-kicker">{mode === 'mysql' ? 'MYSQL CONNECTOR' : 'SQLITE — LOKALNIE'} · {databaseLabel}</div>
+              <div className="data-preview-kicker">SQLITE — LOKALNIE · {databaseLabel}</div>
               <h2 id="data-preview-title">Podgląd danych: {table.name}</h2>
               <p>Podgląd maksymalnie 50 rekordów z aktualnej tabeli.</p>
             </div>
@@ -98,7 +97,7 @@ function DataPreviewModal({
         </div>
 
         <footer className="data-preview-footer">
-          <code>SELECT * FROM {mode === 'mysql' ? `\`${table.name}\`` : `"${table.name}"`} LIMIT 50;</code>
+          <code>SELECT * FROM "{table.name}" LIMIT 50;</code>
           <div className="data-preview-actions"><button type="button" className="btn btn-preview-ghost" onClick={onClose}>Zamknij</button><button type="button" className="btn btn-preview-refresh" onClick={onRefresh} disabled={loading}><i className="bi bi-arrow-clockwise" aria-hidden="true" /> Odśwież podgląd</button></div>
         </footer>
       </section>

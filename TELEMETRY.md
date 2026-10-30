@@ -8,7 +8,7 @@ Snapshot: na starcie, zmianie zadania, uruchomieniu i co 30 s po zmianie kodu. H
 
 Pole nazwy ucznia jest opcjonalne, do 80 znaków, zapamiętywane lokalnie. ID identyfikuje instalację przeglądarki, a nie sprzęt. Kod i nazwa są udostępniane nauczycielowi, o czym informuje pasek boczny.
 
-SQL jest plikiem query.sql. Wynik zawiera status, kolumny, liczbę wierszy i komunikaty; nie wysyłamy zwróconych rekordów ani konfiguracji connectora. Trening SQL ma osobną sesję, z tym samym ID instalacji.
+SQL jest plikiem query.sql. Wynik zawiera status, kolumny, liczbę wierszy i komunikaty; nie wysyłamy zwróconych rekordów. Trening SQL ma osobną sesję, z tym samym ID instalacji.
 
 Historia jest przechowywana w SQLite panelu 14 dni, z limitem 500 MiB treści. RabbitMQ potwierdza odbiór dopiero po zapisie. Panel musi mieć trwały dysk.
 
