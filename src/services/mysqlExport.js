@@ -22,14 +22,14 @@ export function escapeMysqlValue(value) {
     .replaceAll('\b', '\\b')
     .replaceAll('\t', '\\t')
     .replaceAll('\x1a', '\\Z')
-    .replaceAll("'", "\\'")
-    .replaceAll('"', '\\"');
+    .replaceAll("'", "''");
   return `'${escaped}'`;
 }
 
 export function sqliteTypeToMysql(type) {
   const normalized = String(type ?? '').toUpperCase();
-  if (/INT/u.test(normalized)) return 'INT';
+  // SQLite INTEGER is 64-bit, so plain INT would reject larger IDs on import.
+  if (/INT/u.test(normalized)) return 'BIGINT';
   if (/DATETIME|TIMESTAMP/u.test(normalized)) return 'DATETIME';
   if (/^DATE/u.test(normalized)) return 'DATE';
   if (/^TIME/u.test(normalized)) return 'TIME';
@@ -45,17 +45,39 @@ export function sanitizeMysqlDatabaseName(name) {
   return sanitized || 'sql_lab_export';
 }
 
-function buildColumnDefinition(column) {
-  const parts = [escapeMysqlIdentifier(column.name), sqliteTypeToMysql(column.type)];
-  if (column.notNull || column.primaryKey || column.pk) parts.push('NOT NULL');
-  if (column.defaultValue !== null && column.defaultValue !== undefined) parts.push(`DEFAULT ${column.defaultValue}`);
+function buildColumnDefinition(column, { indexedColumns, autoIncrementColumn }) {
+  let mysqlType = sqliteTypeToMysql(column.type);
+  const isPrimaryKey = Boolean(column.primaryKey || column.pk);
+  if (indexedColumns.has(column.name) && /^(TEXT|BLOB)$/u.test(mysqlType)) {
+    // MySQL can't index unbounded TEXT/BLOB keys; VARCHAR(255) is the practical key type.
+    mysqlType = 'VARCHAR(255)';
+  }
+  const parts = [escapeMysqlIdentifier(column.name), mysqlType];
+  if (column.notNull || isPrimaryKey) parts.push('NOT NULL');
+  if (autoIncrementColumn === column.name) parts.push('AUTO_INCREMENT');
+  if (column.defaultValue !== null && column.defaultValue !== undefined) {
+    // TEXT/BLOB defaults need expression syntax: DEFAULT ('x').
+    const defaultExpression = /^(TEXT|BLOB)$/u.test(sqliteTypeToMysql(column.type)) ? `(${column.defaultValue})` : column.defaultValue;
+    parts.push(`DEFAULT ${defaultExpression}`);
+  }
   return parts.join(' ');
 }
 
 function buildCreateTableSql(table) {
-  const lines = table.columns.map((column) => `  ${buildColumnDefinition(column)}`);
-  const primaryKeys = table.columns.filter((column) => column.primaryKey || column.pk).map((column) => escapeMysqlIdentifier(column.name));
+  const uniqueIndexes = (table.uniqueIndexes ?? []).filter((index) => index.columns?.length);
+  const indexedColumns = new Set();
+  const primaryKeyColumns = table.columns.filter((column) => column.primaryKey || column.pk);
+  primaryKeyColumns.forEach((column) => indexedColumns.add(column.name));
+  uniqueIndexes.forEach((index) => index.columns.forEach((column) => indexedColumns.add(column)));
+  const autoIncrementColumn =
+    primaryKeyColumns.length === 1 && /INT/ui.test(primaryKeyColumns[0].type ?? '') ? primaryKeyColumns[0].name : undefined;
+  const lines = table.columns.map((column) => `  ${buildColumnDefinition(column, { indexedColumns, autoIncrementColumn })}`);
+  const primaryKeys = primaryKeyColumns.map((column) => escapeMysqlIdentifier(column.name));
   if (primaryKeys.length) lines.push(`  PRIMARY KEY (${primaryKeys.join(', ')})`);
+  uniqueIndexes.forEach((index) => {
+    const columns = index.columns.map(escapeMysqlIdentifier).join(', ');
+    lines.push(`  UNIQUE KEY ${escapeMysqlIdentifier(index.name)} (${columns})`);
+  });
   (table.foreignKeys ?? []).forEach((foreignKey) => {
     const constraintName = `fk_${table.name}_${foreignKey.from}`;
     lines.push(`  CONSTRAINT ${escapeMysqlIdentifier(constraintName)} FOREIGN KEY (${escapeMysqlIdentifier(foreignKey.from)}) REFERENCES ${escapeMysqlIdentifier(foreignKey.table)} (${escapeMysqlIdentifier(foreignKey.to)})`);
@@ -70,17 +92,22 @@ function buildInsertSql(table) {
   return `INSERT INTO ${escapeMysqlIdentifier(table.name)} (${columnList}) VALUES\n${values.join(',\n')};`;
 }
 
+function sanitizeCommentText(text) {
+  return String(text ?? '').replaceAll(/[\r\n]+/gu, ' ');
+}
+
 export function buildMysqlExportScript({ databaseName, sourceName, tables = [] }) {
   const safeName = sanitizeMysqlDatabaseName(databaseName);
   const rowCount = tables.reduce((count, table) => count + (table.rows?.length ?? 0), 0);
   const parts = [
     '-- SQL Learning Lab — eksport do MySQL/MariaDB',
-    `-- Źródło: ${sourceName ?? databaseName ?? 'baza SQLite'} (SQLite)`,
+    `-- Źródło: ${sanitizeCommentText(sourceName ?? databaseName ?? 'baza SQLite')} (SQLite)`,
     '-- Import: phpMyAdmin → zakładka SQL (wklej) albo Import (wybierz plik .sql).',
     '',
     `CREATE DATABASE IF NOT EXISTS ${escapeMysqlIdentifier(safeName)} DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`,
     `USE ${escapeMysqlIdentifier(safeName)};`,
     'SET NAMES utf8mb4;',
+    "SET SESSION sql_mode = REPLACE(@@SESSION.sql_mode, 'NO_BACKSLASH_ESCAPES', '');",
     'SET FOREIGN_KEY_CHECKS = 0;',
   ];
 
@@ -89,7 +116,7 @@ export function buildMysqlExportScript({ databaseName, sourceName, tables = [] }
   }
 
   tables.forEach((table) => {
-    parts.push('', `-- Tabela: ${table.name}`, `DROP TABLE IF EXISTS ${escapeMysqlIdentifier(table.name)};`, buildCreateTableSql(table));
+    parts.push('', `-- Tabela: ${sanitizeCommentText(table.name)}`, `DROP TABLE IF EXISTS ${escapeMysqlIdentifier(table.name)};`, buildCreateTableSql(table));
     const insertSql = buildInsertSql(table);
     if (insertSql) parts.push(insertSql);
   });

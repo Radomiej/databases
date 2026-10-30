@@ -132,7 +132,19 @@ export function getSqliteSchema(db) {
       to,
     })) ?? [];
 
-    return { name, columns, foreignKeys };
+    const indexListResult = db.exec(`PRAGMA index_list(${quotedName});`);
+    const uniqueIndexes = (indexListResult[0]?.values ?? [])
+      .filter(([, , unique, origin]) => Number(unique) === 1 && origin !== 'pk')
+      .map(([, indexName]) => {
+        const infoResult = db.exec(`PRAGMA index_info(${quoteSqliteIdentifier(indexName)});`);
+        const indexColumns = (infoResult[0]?.values ?? []).map(([, , columnName]) => columnName);
+        return indexColumns.every((columnName) => columnName !== null && columnName !== undefined)
+          ? { name: String(indexName), columns: indexColumns.map(String) }
+          : null;
+      })
+      .filter((index) => index?.columns.length);
+
+    return { name, columns, foreignKeys, uniqueIndexes };
   });
 }
 
