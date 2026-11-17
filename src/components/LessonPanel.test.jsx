@@ -34,6 +34,27 @@ describe('LessonPanel', () => {
     expect(document.querySelector('.bi-list-check')).toBeInTheDocument();
   });
 
+  it('keeps example, quick check and tasks together in one ordered lesson page', () => {
+    const lesson = { id: 'select-limit', order: 1, title: 'SELECT i LIMIT', difficulty: 'Start', theory: 'Wybieranie danych.', example: 'SELECT tytul FROM ksiazki LIMIT 3;', syntax: ['SELECT kolumna FROM tabela;'], tasks };
+    const { container } = render(<LessonPanel lesson={lesson} dataset={dataset} databaseStatus="ready" activeTaskId="guided" onTaskChange={vi.fn()} />);
+
+    expect(screen.getByRole('region', { name: 'Przykład SQL' })).toHaveTextContent('SELECT tytul FROM ksiazki LIMIT 3;');
+    expect(screen.getByRole('region', { name: 'Krótka próba' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Zadanie do wykonania' })).toBeInTheDocument();
+    const labels = [...container.querySelectorAll('.sql-flow-eyebrow')].map((node) => node.textContent);
+    expect(labels).toEqual(['01 · Poznaj i prześledź', '02 · Sprawdź, czy rozumiesz', '03 · Spróbuj samodzielnie']);
+  });
+
+  it('checks the concept question without executing or changing the SQL editor', () => {
+    render(<LessonPanel lesson={{ id: 'select-limit', order: 1, title: 'SELECT i LIMIT', theory: 'Wybieranie danych.', example: 'SELECT tytul FROM ksiazki LIMIT 3;', tasks }} dataset={dataset} databaseStatus="ready" activeTaskId="guided" onTaskChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Liczbę kolumn do trzech.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sprawdź odpowiedź' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Jeszcze nie. Liczbę wierszy w wyniku do trzech.');
+    fireEvent.click(screen.getByRole('radio', { name: 'Liczbę wierszy w wyniku do trzech.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sprawdź odpowiedź' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Dobrze. Liczbę wierszy w wyniku do trzech.');
+  });
+
   it('selects a later task without presenting its solution', () => {
     const onTaskChange = vi.fn();
     render(

@@ -359,10 +359,6 @@ function App() {
         <div className="training-toolbar-actions"><button type="button" className="btn btn-training" onClick={() => setTrainingWizardOpen(true)}><i className="bi bi-lightning-charge" aria-hidden="true" /> Trening SQL</button><button type="button" className="btn btn-training" onClick={handleOpenMysqlExport} disabled={sqlite.status !== 'ready'}><i className="bi bi-box-arrow-up-right" aria-hidden="true" /> Eksport do MySQL</button><div className="toolbar-engine"><span className="toolbar-engine-dot" />SQLite lokalnie</div></div>
       </div>
       <LessonPanel lesson={lesson} dataset={dataset} databaseStatus={sqlite.status} activeTaskId={activeTask?.id} taskProgress={taskProgress} onTaskChange={handleTaskChange} />
-      <div className="syntax-strip">
-        <div className="syntax-strip-label"><i className="bi bi-braces" aria-hidden="true" /> Składnia</div>
-        <div className="syntax-code-list">{lesson.syntax.map((syntax) => <code key={syntax}>{syntax}</code>)}</div>
-      </div>
       <SqlEditor
         value={sqlText}
         onChange={handleSqlChange}

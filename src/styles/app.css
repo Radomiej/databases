@@ -175,6 +175,27 @@ button { cursor: pointer; }
 .toolbar-engine-dot, .mobile-status-dot { display: inline-block; width: 8px; height: 8px; background: #31bd77; border-radius: 50%; box-shadow: 0 0 0 3px rgba(49, 189, 119, 0.12); }
 
 .lesson-overview { padding: 25px 0 0; }
+.sql-flow-eyebrow { margin: 0 0 8px; color: #537d8e; font-size: .68rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.lesson-heading-row + .sql-flow-eyebrow { margin-top: 24px; }
+.lesson-example { display: grid; gap: 8px; margin: 18px 0 10px; padding: 14px 16px; background: #f4f8fb; border: 1px solid #dce8ef; border-radius: var(--radius); }
+.lesson-example h2 { margin: 0; color: #35566c; font-size: .8rem; font-weight: 750; }
+.lesson-example > p { margin: 0; color: #435e70; font-size: .82rem; line-height: 1.55; }
+.lesson-example pre { max-width: 100%; margin: 0; padding: 12px; overflow-x: auto; color: #e9f5fa; background: #173348; border-radius: 7px; }
+.lesson-example code { color: inherit; font-size: .75rem; white-space: pre; }
+.sql-quick-check { margin: 16px 0; padding: 16px; background: #fffaf0; border: 1px solid #f0e1ba; border-radius: var(--radius); scroll-margin-top: 16px; }
+.sql-quick-check fieldset { display: grid; gap: 7px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.sql-quick-check legend { margin-bottom: 8px; color: #334e60; font-size: .88rem; font-weight: 750; }
+.sql-quick-option { display: flex; gap: 9px; align-items: flex-start; padding: 9px 11px; color: #4b6272; background: #fff; border: 1px solid #e5e8e6; border-radius: 7px; cursor: pointer; font-size: .76rem; line-height: 1.45; }
+.sql-quick-option input { flex: 0 0 auto; margin-top: 3px; accent-color: #218984; }
+.sql-quick-option.is-correct { border-color: #7bc9a0; background: #effaf3; }
+.sql-quick-option.is-wrong { border-color: #e2a096; background: #fff4f1; }
+.sql-quick-check-button, .sql-quick-continue { min-height: 38px; margin: 9px 7px 0 0; padding: 8px 12px; color: #175e65; background: #fff; border: 1px solid #c2d8d7; border-radius: 7px; font: inherit; font-size: .72rem; font-weight: 700; cursor: pointer; }
+.sql-quick-check-button:disabled { opacity: .5; cursor: not-allowed; }
+.sql-quick-continue { color: #fff; background: #176b72; border-color: #176b72; }
+.sql-quick-feedback { margin: 10px 0 0; padding: 9px 11px; border-radius: 6px; font-size: .76rem; }
+.sql-quick-feedback.is-correct { color: #236342; background: #eaf7ef; }
+.sql-quick-feedback.is-wrong { color: #754c14; background: #fff4dd; }
+.task-callout { scroll-margin-top: 16px; }
 .breadcrumb-line { display: flex; gap: 8px; align-items: center; min-height: 22px; color: #9aaaba; font-size: 0.69rem; font-weight: 650; }
 .breadcrumb-line i { color: #c1ccd6; font-size: 0.58rem; }
 .breadcrumb-line strong { color: #4d6175; font-weight: 700; }

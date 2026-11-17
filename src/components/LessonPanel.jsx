@@ -2,6 +2,7 @@ import CopyLessonLink from './CopyLessonLink.jsx';
 import { useState } from 'react';
 import { getTaskProgressKey } from '../data/lessonTasks.js';
 import LessonWalkthrough from './LessonWalkthrough.jsx';
+import LessonQuickCheck from './LessonQuickCheck.jsx';
 
 function describeColumn(column) {
   const parts = [column.name, column.type, column.primaryKey && 'PRIMARY KEY', column.notNull && !column.primaryKey && 'NOT NULL'];
@@ -61,6 +62,7 @@ function LessonPanel({ lesson, dataset, databaseStatus, activeTaskId, taskProgre
 
       <div className="lesson-heading-row">
         <div>
+          <p className="sql-flow-eyebrow">01 · Poznaj i prześledź</p>
           <h1><i className="bi bi-journal-code" aria-hidden="true" /> {lesson.title}</h1>
           <p className="lesson-lead">{lesson.theory}</p>
         </div>
@@ -71,9 +73,22 @@ function LessonPanel({ lesson, dataset, databaseStatus, activeTaskId, taskProgre
       </div>
 
       <CopyLessonLink />
+      {lesson.example && <section className="lesson-example" aria-label="Przykład SQL">
+        <h2>Przykład</h2>
+        {/^(SELECT|WITH|CREATE\s+TABLE|ALTER\s+TABLE)\b/i.test(lesson.example.trim())
+          ? <pre><code>{lesson.example}</code></pre>
+          : <p>{lesson.example}</p>}
+      </section>}
+      {lesson.syntax?.length > 0 && <div className="syntax-strip" aria-label="Składnia tej lekcji">
+        <div className="syntax-strip-label"><i className="bi bi-braces" aria-hidden="true" /> Składnia</div>
+        <div className="syntax-code-list">{lesson.syntax.map((syntax) => <code key={syntax}>{syntax}</code>)}</div>
+      </div>}
       <LessonWalkthrough walkthrough={lesson.walkthrough} />
 
-      <section className="task-callout" aria-labelledby="lesson-task-title">
+      <LessonQuickCheck key={lesson.id} lessonId={lesson.id} />
+
+      <section id="lesson-task-section" className="task-callout" aria-labelledby="lesson-task-title">
+        <p className="sql-flow-eyebrow">03 · Spróbuj samodzielnie</p>
         <div className="task-callout-header">
           <div className="task-icon"><i className="bi bi-list-check" aria-hidden="true" /></div>
           <div className="task-callout-heading">
